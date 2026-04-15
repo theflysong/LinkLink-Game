@@ -1,11 +1,11 @@
-package io.github.theflysong.client.gl;
+package io.github.theflysong.client.gl.mesh;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import io.github.theflysong.data.ResLoc;
-import io.github.theflysong.data.ResType;
+import io.github.theflysong.data.Identifier;
+import io.github.theflysong.data.ResourceType;
 import io.github.theflysong.util.Side;
 import io.github.theflysong.util.SideOnly;
 import io.github.theflysong.util.registry.Deferred;
@@ -43,7 +43,7 @@ public class GLVertexLayouts {
      *
      * 单顶点占用 16 字节。
      */
-    public static final Deferred<GLVertexLayout> SPRITE = register(new ResLoc("linklink", ResType.VERTEX_LAYOUT, "sprite"),
+    public static final Deferred<GLVertexLayout> SPRITE = register(new Identifier("linklink", ResourceType.VERTEX_LAYOUT, "sprite"),
             () -> new GLVertexLayout(
                 16,
                 List.of(
@@ -61,7 +61,7 @@ public class GLVertexLayouts {
      *
      * 单顶点占用 20 字节。
      */
-    public static final Deferred<GLVertexLayout> P3U2 = register(new ResLoc("linklink", ResType.VERTEX_LAYOUT, "p3u2"),
+    public static final Deferred<GLVertexLayout> P3U2 = register(new Identifier("linklink", ResourceType.VERTEX_LAYOUT, "p3u2"),
             () -> new GLVertexLayout(
                 20,
                 List.of(
@@ -73,7 +73,7 @@ public class GLVertexLayouts {
         /**
      * 注册一个新布局。
      */
-    public static Deferred<GLVertexLayout> register(ResLoc layoutId,
+    public static Deferred<GLVertexLayout> register(Identifier layoutId,
                                                     java.util.function.Supplier<GLVertexLayout> supplier) {
         return LAYOUTS.register(layoutId, supplier);
     }
@@ -81,7 +81,7 @@ public class GLVertexLayouts {
      /**
      * 根据配置文件中的布局名解析预设布局。
      */
-    public static GLVertexLayout resolve(ResLoc layoutId) {
+    public static GLVertexLayout resolve(Identifier layoutId) {
         return LAYOUTS.getOrThrow(layoutId).get();
     }
 }

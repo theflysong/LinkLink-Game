@@ -4,12 +4,12 @@ import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 
 import io.github.theflysong.client.data.Texture2D;
-import io.github.theflysong.client.gl.GLShaders;
 import io.github.theflysong.client.gl.GLTexture2D;
-import io.github.theflysong.client.gl.Shader;
-import io.github.theflysong.data.ResLoader;
-import io.github.theflysong.data.ResLoc;
-import io.github.theflysong.data.ResType;
+import io.github.theflysong.client.gl.shader.GLShaders;
+import io.github.theflysong.client.gl.shader.Shader;
+import io.github.theflysong.data.ResourceLoader;
+import io.github.theflysong.data.Identifier;
+import io.github.theflysong.data.ResourceType;
 import io.github.theflysong.util.Side;
 import io.github.theflysong.util.SideOnly;
 
@@ -32,7 +32,7 @@ import java.util.Optional;
 public final class Sprite implements AutoCloseable {
     private static final Gson GSON = new Gson();
 
-    private final ResLoc id;
+    private final Identifier id;
     private final Model model;
     private final Shader shader;
     private final Map<String, GLTexture2D> textures;
@@ -43,7 +43,7 @@ public final class Sprite implements AutoCloseable {
         Map<String, String> textures = new LinkedHashMap<>();
     }
 
-    private Sprite(ResLoc id, Model model, Shader shader, Map<String, GLTexture2D> textures) {
+    private Sprite(Identifier id, Model model, Shader shader, Map<String, GLTexture2D> textures) {
         this.id = Objects.requireNonNull(id, "id must not be null");
         this.model = Objects.requireNonNull(model, "model must not be null");
         this.shader = Objects.requireNonNull(shader, "shader must not be null");
@@ -58,8 +58,8 @@ public final class Sprite implements AutoCloseable {
      * - shader 引用会被解析成 linklink:shader/<name>
      * - texture 引用支持若干回退规则，以适配当前资源命名
      */
-    public static Sprite fromConfig(ResLoc spriteConfigLocation) {
-        String json = ResLoader.loadText(spriteConfigLocation);
+    public static Sprite fromConfig(Identifier spriteConfigLocation) {
+        String json = ResourceLoader.loadText(spriteConfigLocation);
         SpriteDefinition definition;
         try {
             definition = GSON.fromJson(json, SpriteDefinition.class);
@@ -79,22 +79,22 @@ public final class Sprite implements AutoCloseable {
             throw new IllegalArgumentException("Missing 'textures' in sprite config: " + spriteConfigLocation);
         }
 
-        ResLoc modelId = parseModelLocation(spriteConfigLocation, definition.model);
-        ResLoc shaderId = parseShaderLocation(spriteConfigLocation, definition.shader);
+        Identifier modelId = parseModelLocation(spriteConfigLocation, definition.model);
+        Identifier shaderId = parseShaderLocation(spriteConfigLocation, definition.shader);
         Model model = Models.getOrThrow(modelId);
         Shader shader = GLShaders.getOrThrow(shaderId);
 
         Map<String, GLTexture2D> textures = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry : definition.textures.entrySet()) {
-            ResLoc textureLoc = resolveTextureLocation(spriteConfigLocation, entry.getValue());
-            Texture2D texture = Texture2D.fromImage(ResLoader.loadBinary(textureLoc), textureLoc.toString());
+            Identifier textureLoc = resolveTextureLocation(spriteConfigLocation, entry.getValue());
+            Texture2D texture = Texture2D.fromImage(ResourceLoader.loadBinary(textureLoc), textureLoc.toString());
             textures.put(entry.getKey(), new GLTexture2D.Builder(GLTexture2D.Builder.PIXEL_STYLE).build(texture));
         }
 
         return new Sprite(spriteConfigLocation, model, shader, textures);
     }
 
-    private static ResLoc parseModelLocation(ResLoc base, String value) {
+    private static Identifier parseModelLocation(Identifier base, String value) {
         int sep = value.indexOf(':');
         if (sep > 0 && sep < value.length() - 1) {
             String namespace = value.substring(0, sep);
@@ -102,12 +102,12 @@ public final class Sprite implements AutoCloseable {
             if (path.startsWith("sprite/")) {
                 path = path.substring("sprite/".length());
             }
-            return new ResLoc(namespace, ResType.MODEL, path);
+            return new Identifier(namespace, ResourceType.MODEL, path);
         }
-        return new ResLoc(base.namespace(), ResType.MODEL, value);
+        return new Identifier(base.namespace(), ResourceType.MODEL, value);
     }
 
-    private static ResLoc parseShaderLocation(ResLoc base, String value) {
+    private static Identifier parseShaderLocation(Identifier base, String value) {
         int sep = value.indexOf(':');
         if (sep > 0 && sep < value.length() - 1) {
             String namespace = value.substring(0, sep);
@@ -115,14 +115,14 @@ public final class Sprite implements AutoCloseable {
             if (path.startsWith("shader/")) {
                 path = path.substring("shader/".length());
             }
-            return new ResLoc(namespace, ResType.SHADER, path);
+            return new Identifier(namespace, ResourceType.SHADER, path);
         }
-        return new ResLoc(base.namespace(), ResType.SHADER, value);
+        return new Identifier(base.namespace(), ResourceType.SHADER, value);
     }
 
-    private static ResLoc resolveTextureLocation(ResLoc base, String value) {
-        ResLoc exact = parseTextureLocation(base, value);
-        if (ResLoader.loadFile(exact) != null) {
+    private static Identifier resolveTextureLocation(Identifier base, String value) {
+        Identifier exact = parseTextureLocation(base, value);
+        if (ResourceLoader.loadFile(exact) != null) {
             return exact;
         }
 
@@ -145,8 +145,8 @@ public final class Sprite implements AutoCloseable {
         }
 
         for (String candidate : candidates) {
-            ResLoc candidateLoc = new ResLoc(exact.namespace(), ResType.TEXTURE, candidate);
-            if (ResLoader.loadFile(candidateLoc) != null) {
+            Identifier candidateLoc = new Identifier(exact.namespace(), ResourceType.TEXTURE, candidate);
+            if (ResourceLoader.loadFile(candidateLoc) != null) {
                 return candidateLoc;
             }
         }
@@ -154,17 +154,17 @@ public final class Sprite implements AutoCloseable {
         throw new IllegalArgumentException("Cannot resolve texture resource from config value: " + value);
     }
 
-    private static ResLoc parseTextureLocation(ResLoc base, String value) {
+    private static Identifier parseTextureLocation(Identifier base, String value) {
         int sep = value.indexOf(':');
         if (sep > 0 && sep < value.length() - 1) {
             String namespace = value.substring(0, sep);
             String path = value.substring(sep + 1);
-            return new ResLoc(namespace, ResType.TEXTURE, path);
+            return new Identifier(namespace, ResourceType.TEXTURE, path);
         }
-        return new ResLoc(base.namespace(), ResType.TEXTURE, value);
+        return new Identifier(base.namespace(), ResourceType.TEXTURE, value);
     }
 
-    public ResLoc id() {
+    public Identifier id() {
         return id;
     }
 

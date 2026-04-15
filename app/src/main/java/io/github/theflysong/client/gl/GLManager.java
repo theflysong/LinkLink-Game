@@ -13,8 +13,8 @@ import io.github.theflysong.util.Side;
 import io.github.theflysong.util.SideOnly;
 
 @SideOnly(Side.CLIENT)
-public class GLMgr {
-    private static GLMgr INSTANCE;
+public class GLManager {
+    private static GLManager INSTANCE;
 
     /**
      * 记录一次纹理状态快照：激活单元 + 该单元纹理。
@@ -31,15 +31,15 @@ public class GLMgr {
     // 纹理单元绑定的纹理ID列表
     private int[] textureBindings = new int[textureUnitCnt];
 
-    private GLMgr() {
+    private GLManager() {
         for (int i = 0; i < textureUnitCnt; i++) {
             textureBindings[i] = -1; // -1表示未绑定任何纹理
         }
     }
 
-    public static GLMgr getInstance() {
+    public static GLManager getInstance() {
         if (INSTANCE == null) {
-            INSTANCE = new GLMgr();
+            INSTANCE = new GLManager();
         }
         return INSTANCE;
     }

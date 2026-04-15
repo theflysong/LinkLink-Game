@@ -1,5 +1,11 @@
-package io.github.theflysong.client.gl;
+package io.github.theflysong.client.render;
 
+import org.joml.Matrix4f;
+import org.jspecify.annotations.Nullable;
+
+import io.github.theflysong.client.gl.mesh.GLGpuMesh;
+import io.github.theflysong.client.gl.shader.Shader;
+import io.github.theflysong.client.render.preprocessor.IPreprocessor;
 import io.github.theflysong.util.Side;
 import io.github.theflysong.util.SideOnly;
 
@@ -17,16 +23,10 @@ import io.github.theflysong.util.SideOnly;
  * - 排序键（前后向、材质分桶等）
  */
 @SideOnly(Side.CLIENT)
-public record GLRenderItem(
+public record RenderItem(
     GLGpuMesh mesh,
-    Shader shader
+    Shader shader,
+    Matrix4f modelMatrix,
+    @Nullable IPreprocessor preprocessor
 ) {
-    public GLRenderItem {
-        if (mesh == null) {
-            throw new IllegalArgumentException("mesh must not be null");
-        }
-        if (shader == null) {
-            throw new IllegalArgumentException("shader must not be null");
-        }
-    }
 }

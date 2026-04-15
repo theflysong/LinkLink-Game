@@ -31,6 +31,7 @@ dependencies {
     implementation libs.joml
     implementation libs.gson
     implementation libs.jspecify
+    implementation libs.iogame
     runtimeOnly(variantOf(libs.lwjgl) { classifier('natives-windows') })
     runtimeOnly(variantOf(libs.lwjgl.glfw) { classifier('natives-windows') })
     runtimeOnly(variantOf(libs.lwjgl.opengl) { classifier('natives-windows') })

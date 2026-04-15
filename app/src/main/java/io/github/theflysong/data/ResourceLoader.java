@@ -16,7 +16,7 @@ import java.nio.charset.StandardCharsets;
 import org.jspecify.annotations.Nullable;
 import org.lwjgl.BufferUtils;
 
-import io.github.theflysong.client.gl.Shader;
+import io.github.theflysong.client.gl.shader.Shader;
 
 /**
  * Resource Location，资源位置，表示一个资源在游戏中的唯一标识
@@ -25,18 +25,18 @@ import io.github.theflysong.client.gl.Shader;
  * @author theflysong
  * @date 2026年4月14日
  */
-public class ResLoader {
+public class ResourceLoader {
     @Nullable
     public static InputStream loadFile(String name) {
-        return ResLoader.class.getClassLoader().getResourceAsStream(name);
+        return ResourceLoader.class.getClassLoader().getResourceAsStream(name);
     }
 
     @Nullable
-    public static InputStream loadFile(ResLoc location) {
+    public static InputStream loadFile(Identifier location) {
         return loadFile(location.toPath());
     }
 
-    public static String loadText(ResLoc location) {
+    public static String loadText(Identifier location) {
         StringBuilder sb = new StringBuilder();
         InputStream file = Objects.requireNonNull(loadFile(location), "Couldn't load file from " + location);
         try (BufferedReader br = new BufferedReader(new InputStreamReader(file, StandardCharsets.UTF_8))) {
@@ -53,8 +53,8 @@ public class ResLoader {
         return sb.toString();
     }
 
-    public static ByteBuffer loadBinary(ResLoc location) {
-        try (InputStream stream = Objects.requireNonNull(ResLoader.loadFile(location), "Couldn't load file from " + location)) {
+    public static ByteBuffer loadBinary(Identifier location) {
+        try (InputStream stream = Objects.requireNonNull(ResourceLoader.loadFile(location), "Couldn't load file from " + location)) {
             byte[] bytes = stream.readAllBytes();
             ByteBuffer buffer = ByteBuffer.allocateDirect(bytes.length);
             buffer.put(bytes);

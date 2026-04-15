@@ -6,7 +6,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import io.github.theflysong.data.ResLoc;
+import io.github.theflysong.data.Identifier;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -18,10 +18,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * 2. register 不允许重复 key，避免误覆盖。
  */
 public class SimpleRegistry<V> implements Registry<V> {
-    private final Map<ResLoc, Deferred<V>> values = new ConcurrentHashMap<>();
+    private final Map<Identifier, Deferred<V>> values = new ConcurrentHashMap<>();
 
     @Override
-    public Deferred<V> register(ResLoc key, Supplier<V> supplier) {
+    public Deferred<V> register(Identifier key, Supplier<V> supplier) {
         Objects.requireNonNull(key, "key must not be null");
         Objects.requireNonNull(supplier, "supplier must not be null");
         Deferred<V> deferred = new Deferred<>(supplier);
@@ -33,7 +33,7 @@ public class SimpleRegistry<V> implements Registry<V> {
     }
 
     @Override
-    public Optional<Deferred<V>> get(ResLoc key) {
+    public Optional<Deferred<V>> get(Identifier key) {
         Objects.requireNonNull(key, "key must not be null");
         return Optional.ofNullable(values.get(key));
     }
@@ -46,13 +46,13 @@ public class SimpleRegistry<V> implements Registry<V> {
     }
 
     @Override
-    public boolean containsKey(ResLoc key) {
+    public boolean containsKey(Identifier key) {
         Objects.requireNonNull(key, "key must not be null");
         return values.containsKey(key);
     }
 
     @Override
-    public Set<ResLoc> keys() {
+    public Set<Identifier> keys() {
         return Set.copyOf(values.keySet());
     }
 }

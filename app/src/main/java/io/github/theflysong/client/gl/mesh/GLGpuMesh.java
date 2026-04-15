@@ -1,4 +1,4 @@
-package io.github.theflysong.client.gl;
+package io.github.theflysong.client.gl.mesh;
 
 import static org.lwjgl.opengl.GL11C.GL_TRIANGLES;
 import static org.lwjgl.opengl.GL11C.GL_UNSIGNED_INT;

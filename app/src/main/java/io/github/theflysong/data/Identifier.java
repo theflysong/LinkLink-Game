@@ -7,8 +7,8 @@ package io.github.theflysong.data;
  * @author theflysong
  * @date 2026年4月14日
  */
-public record ResLoc(String namespace, ResType type, String path) {
-    public ResLoc(String namespace, ResType type, String path) {
+public record Identifier(String namespace, ResourceType type, String path) {
+    public Identifier(String namespace, ResourceType type, String path) {
         this.namespace = namespace;
         this.type = type;
         this.path = path;

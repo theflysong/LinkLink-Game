@@ -3,44 +3,37 @@
  */
 package io.github.theflysong;
 
-import java.nio.ByteBuffer;
-
 import org.joml.Matrix4f;
-import org.lwjgl.system.MemoryUtil;
+import org.joml.Vector4f;
 
-import io.github.theflysong.client.gl.GLGpuMesh;
-import io.github.theflysong.client.gl.GLMeshBuilder;
-import io.github.theflysong.client.gl.GLMeshData;
-import io.github.theflysong.client.gl.GLMgr;
-import io.github.theflysong.client.gl.GLRenderItem;
-import io.github.theflysong.client.gl.GLRenderer;
-import io.github.theflysong.client.gl.GLShaders;
-import io.github.theflysong.client.gl.GLVertexLayouts;
-import io.github.theflysong.client.gl.Shader;
 import io.github.theflysong.client.gl.Window;
+import io.github.theflysong.client.gl.mesh.GLGpuMesh;
+import io.github.theflysong.client.gl.mesh.GLVertexLayouts;
+import io.github.theflysong.client.gl.shader.GLShaders;
+import io.github.theflysong.client.gl.shader.Shader;
+import io.github.theflysong.client.render.RenderItem;
+import io.github.theflysong.client.render.Renderer;
+import io.github.theflysong.client.render.preprocessor.SpriteOverlayPreprocessor;
 import io.github.theflysong.client.sprite.Models;
 import io.github.theflysong.client.sprite.Sprite;
 import io.github.theflysong.client.sprite.Sprites;
-import io.github.theflysong.data.ResLoc;
-import io.github.theflysong.data.ResType;
 
 import static org.lwjgl.opengl.GL11C.GL_BLEND;
 import static org.lwjgl.opengl.GL11C.GL_ONE_MINUS_SRC_ALPHA;
 import static org.lwjgl.opengl.GL11C.GL_SRC_ALPHA;
-import static org.lwjgl.opengl.GL11C.GL_UNSIGNED_INT;
 import static org.lwjgl.opengl.GL11C.glBlendFunc;
 import static org.lwjgl.opengl.GL11C.glEnable;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class App {
     private static final float WINDOW_WIDTH = 960.0f;
     private static final float WINDOW_HEIGHT = 540.0f;
 
     private static final class AppState {
-        private Sprite sprite;
-        private Shader shader;
-        private GLGpuMesh mesh;
-        private GLRenderer renderer;
-        private GLRenderItem renderItem;
+        private Renderer renderer;
+        private List<RenderItem> renderItems = new ArrayList<>();
     }
 
     public static void main(String[] args) {
@@ -62,52 +55,37 @@ public class App {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        state.sprite = Sprites.GEM3.get();
-        state.shader = state.sprite.shader();
+        state.renderer = new Renderer();
+        float aspect = WINDOW_WIDTH / WINDOW_HEIGHT;
+        Matrix4f projection = new Matrix4f().ortho(-aspect, aspect, -1.0f, 1.0f, -1.0f, 1.0f);
+        state.renderer.updateProjection(projection);
 
-        state.mesh = state.sprite.model().createGpuMesh();
+        Vector4f DIAMOND_COLOR = new Vector4f(0.35f, 0.90f, 1.00f, 1.0f);
+        var sprite = Sprites.GEM3.get();
 
-        state.renderer = new GLRenderer();
-        state.renderItem = new GLRenderItem(state.mesh, state.shader);
-
-        setupUniforms(state.shader);
+        state.renderItems.add(new RenderItem(
+            sprite.model().createGpuMesh(),
+            sprite.shader(),
+            new Matrix4f().identity(),
+            SpriteOverlayPreprocessor.processor(DIAMOND_COLOR, sprite)
+        ));
     }
 
     private static void render(AppState state) {
-        GLMgr.getInstance().binding(0, state.sprite.textureOrThrow("layer0").glId());
-        GLMgr.getInstance().binding(1, state.sprite.textureOrThrow("overlay").glId());
-
-        state.renderer.submit(state.renderItem);
+        for (RenderItem item : state.renderItems) {
+            state.renderer.submit(item);
+        }
         state.renderer.flush();
     }
 
     private static void cleanup(AppState state) {
-        if (state.mesh != null) {
-            state.mesh.close();
+        for (RenderItem item : state.renderItems) {
+            if (item.mesh() != null) {
+                item.mesh().close();
+            }
         }
         Sprites.closeAll();
         Models.closeAll();
         GLShaders.closeAll();
-    }
-
-    private static void setupUniforms(Shader shader) {
-        // 采样器绑定到纹理单元 0/1。
-        shader.getUniform("sam_texture").ifPresent(u -> u.set(0));
-        shader.getUniform("sam_overlay").ifPresent(u -> u.set(1));
-
-        // MC 钻石偏青蓝色调；乘到基础纹理上。
-        shader.getUniform("v4_spriteColor")
-                .ifPresent(u -> u.set(0.35f, 0.90f, 1.00f, 1.0f));
-
-        // 设置intensity
-        shader.getUniform("f_overlayIntensity")
-                .ifPresent(u -> u.set(0.7f));
-
-        Matrix4f model = new Matrix4f().identity();
-        float aspect = WINDOW_WIDTH / WINDOW_HEIGHT;
-        // 用正交投影修正宽高比，避免在非正方形窗口中被拉伸/压扁。
-        Matrix4f projection = new Matrix4f().ortho(-aspect, aspect, -1.0f, 1.0f, -1.0f, 1.0f);
-        shader.getUniform("m4_model").ifPresent(u -> u.set(model));
-        shader.getUniform("m4_projection").ifPresent(u -> u.set(projection));
     }
 }

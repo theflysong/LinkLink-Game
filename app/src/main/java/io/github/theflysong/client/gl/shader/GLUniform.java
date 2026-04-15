@@ -1,4 +1,4 @@
-package io.github.theflysong.client.gl;
+package io.github.theflysong.client.gl.shader;
 
 import java.nio.ByteBuffer;
 

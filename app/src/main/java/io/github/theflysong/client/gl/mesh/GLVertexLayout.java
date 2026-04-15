@@ -1,11 +1,11 @@
-package io.github.theflysong.client.gl;
+package io.github.theflysong.client.gl.mesh;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import io.github.theflysong.data.ResLoc;
-import io.github.theflysong.data.ResType;
+import io.github.theflysong.data.Identifier;
+import io.github.theflysong.data.ResourceType;
 import io.github.theflysong.util.Side;
 import io.github.theflysong.util.SideOnly;
 import io.github.theflysong.util.registry.Deferred;

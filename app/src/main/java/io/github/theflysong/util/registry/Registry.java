@@ -2,7 +2,7 @@ package io.github.theflysong.util.registry;
 
 import java.util.function.Supplier;
 
-import io.github.theflysong.data.ResLoc;
+import io.github.theflysong.data.Identifier;
 
 import java.util.Optional;
 import java.util.Set;
@@ -20,17 +20,17 @@ public interface Registry<V> {
      *
      * @throws IllegalStateException 当 key 已存在时抛出，避免静默覆盖。
      */
-    Deferred<V> register(ResLoc key, Supplier<V> supplier);
+    Deferred<V> register(Identifier key, Supplier<V> supplier);
 
     /**
      * 按 key 查询值。
      */
-    Optional<Deferred<V>> get(ResLoc key);
+    Optional<Deferred<V>> get(Identifier key);
 
     /**
      * 按 key 查询值，若不存在则抛异常。
      */
-    default Deferred<V> getOrThrow(ResLoc key) {
+    default Deferred<V> getOrThrow(Identifier key) {
         return get(key).orElseThrow(() -> new IllegalArgumentException("No value registered for key: " + key));
     }
 
@@ -42,10 +42,10 @@ public interface Registry<V> {
     /**
      * 判断 key 是否已注册。
      */
-    boolean containsKey(ResLoc key);
+    boolean containsKey(Identifier key);
 
     /**
      * 返回所有已注册 key 的快照。
      */
-    Set<ResLoc> keys();
+    Set<Identifier> keys();
 }

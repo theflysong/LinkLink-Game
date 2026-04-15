@@ -44,8 +44,8 @@ public class GLTexture2D implements AutoCloseable {
      * 创建 GL 纹理并上传像素数据。
      */
     private void build() {
-        GLMgr.getInstance().pushTextureBindingStack();
-        GLMgr.getInstance().binding(0, glId);
+        GLManager.getInstance().pushTextureBindingStack();
+        GLManager.getInstance().binding(0, glId);
 
         for (var entry : params.entrySet()) {
             glTexParameteri(GL_TEXTURE_2D, entry.getKey(), entry.getValue());
@@ -54,15 +54,15 @@ public class GLTexture2D implements AutoCloseable {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                 width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
-        GLMgr.getInstance().popTextureBindingStack();
+        GLManager.getInstance().popTextureBindingStack();
     }
 
     public void bind() {
-        GLMgr.getInstance().bindTexture(glId);
+        GLManager.getInstance().bindTexture(glId);
     }
 
     public void unbind() {
-        GLMgr.getInstance().bindTexture(0);
+        GLManager.getInstance().bindTexture(0);
     }
 
     public int glId() {

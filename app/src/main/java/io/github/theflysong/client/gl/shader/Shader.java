@@ -1,11 +1,13 @@
-package io.github.theflysong.client.gl;
+package io.github.theflysong.client.gl.shader;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 
-import io.github.theflysong.data.ResLoader;
-import io.github.theflysong.data.ResLoc;
-import io.github.theflysong.data.ResType;
+import io.github.theflysong.client.gl.mesh.GLVertexLayout;
+import io.github.theflysong.client.gl.mesh.GLVertexLayouts;
+import io.github.theflysong.data.ResourceLoader;
+import io.github.theflysong.data.Identifier;
+import io.github.theflysong.data.ResourceType;
 import io.github.theflysong.util.Side;
 import io.github.theflysong.util.SideOnly;
 
@@ -75,11 +77,11 @@ public class Shader implements AutoCloseable {
      * 3. 解析并创建 uniform。
      * 4. 解析顶点布局并挂到 Shader 上，供渲染阶段校验。
      */
-    public static Shader fromConfig(ResLoc shaderConfigLocation) {
+    public static Shader fromConfig(Identifier shaderConfigLocation) {
         ShaderDefinition definition = parseConfig(shaderConfigLocation);
 
-        String vertexSource = ResLoader.loadText(parseShaderSourceLocation(definition.vertex));
-        String fragmentSource = ResLoader.loadText(parseShaderSourceLocation(definition.fragment));
+        String vertexSource = ResourceLoader.loadText(parseShaderSourceLocation(definition.vertex));
+        String fragmentSource = ResourceLoader.loadText(parseShaderSourceLocation(definition.fragment));
         GLVertexLayout layout = GLVertexLayouts.resolve(parseVertexLayoutLocation(definition.vertlayout));
 
         Shader shader = new Shader(vertexSource, fragmentSource, layout);
@@ -90,8 +92,8 @@ public class Shader implements AutoCloseable {
         return shader;
     }
 
-    private static ShaderDefinition parseConfig(ResLoc shaderConfigLocation) {
-        String json = ResLoader.loadText(shaderConfigLocation);
+    private static ShaderDefinition parseConfig(Identifier shaderConfigLocation) {
+        String json = ResourceLoader.loadText(shaderConfigLocation);
         @Nullable
         ShaderDefinition definition;
         try {
@@ -122,7 +124,7 @@ public class Shader implements AutoCloseable {
      * 1. 自动去掉前缀 shader/，避免与 ResType.SHADER 重复。
      * 2. 当 .vert/.frag 文件不存在时，回退到 .vs/.fs。
      */
-    private static ResLoc parseShaderSourceLocation(String value) {
+    private static Identifier parseShaderSourceLocation(String value) {
         int sep = value.indexOf(':');
         if (sep <= 0 || sep >= value.length() - 1) {
             throw new IllegalArgumentException("Invalid shader resource location: " + value);
@@ -133,8 +135,8 @@ public class Shader implements AutoCloseable {
             path = path.substring("shader/".length());
         }
 
-        ResLoc exact = new ResLoc(namespace, ResType.SHADER, path);
-        if (ResLoader.loadFile(exact) != null) {
+        Identifier exact = new Identifier(namespace, ResourceType.SHADER, path);
+        if (ResourceLoader.loadFile(exact) != null) {
             return exact;
         }
 
@@ -145,14 +147,14 @@ public class Shader implements AutoCloseable {
             fallbackPath = path.substring(0, path.length() - 5) + ".fs";
         }
 
-        ResLoc fallback = new ResLoc(namespace, ResType.SHADER, fallbackPath);
-        if (ResLoader.loadFile(fallback) != null) {
+        Identifier fallback = new Identifier(namespace, ResourceType.SHADER, fallbackPath);
+        if (ResourceLoader.loadFile(fallback) != null) {
             return fallback;
         }
         throw new IllegalArgumentException("Cannot resolve shader source from config value: " + value);
     }
 
-    private static ResLoc parseVertexLayoutLocation(String value) {
+    private static Identifier parseVertexLayoutLocation(String value) {
         int sep = value.indexOf(':');
         if (sep <= 0 || sep >= value.length() - 1) {
             throw new IllegalArgumentException("Invalid vertex layout location: " + value);
@@ -162,7 +164,7 @@ public class Shader implements AutoCloseable {
         if (path.startsWith("vertexlayout/")) {
             path = path.substring("vertexlayout/".length());
         }
-        return new ResLoc(namespace, ResType.VERTEX_LAYOUT, path);
+        return new Identifier(namespace, ResourceType.VERTEX_LAYOUT, path);
     }
 
     private static UniformType parseUniformType(String value) {

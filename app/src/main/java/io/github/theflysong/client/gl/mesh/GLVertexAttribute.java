@@ -1,4 +1,4 @@
-package io.github.theflysong.client.gl;
+package io.github.theflysong.client.gl.mesh;
 
 import io.github.theflysong.util.Side;
 import io.github.theflysong.util.SideOnly;

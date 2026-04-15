@@ -1,10 +1,14 @@
-package io.github.theflysong.client.gl;
+package io.github.theflysong.client.render;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.joml.Matrix4f;
+
+import io.github.theflysong.client.gl.mesh.GLVertexLayout;
+import io.github.theflysong.client.gl.shader.Shader;
 import io.github.theflysong.util.Side;
 import io.github.theflysong.util.SideOnly;
 
@@ -24,7 +28,7 @@ import io.github.theflysong.util.SideOnly;
  * - 引入透明物体排序与不同 RenderPass。
  */
 @SideOnly(Side.CLIENT)
-public class GLRenderer {
+public class Renderer {
     /**
      * 按 Shader 分桶的提交队列。
      *
@@ -32,12 +36,13 @@ public class GLRenderer {
      * 1. 保留 Shader 首次出现顺序，便于维持可预测的绘制顺序。
      * 2. 同一个 Shader 下的 item 仍按提交顺序追加。
      */
-    private final Map<Shader, List<GLRenderItem>> shaderBuckets = new LinkedHashMap<>();
+    private final Map<Shader, List<RenderItem>> shaderBuckets = new LinkedHashMap<>();
+    private final RenderInfo renderInfo = new RenderInfo(new Matrix4f().identity());
 
     /**
      * 提交一个渲染项到当前帧队列。
      */
-    public void submit(GLRenderItem item) {
+    public void submit(RenderItem item) {
         if (item == null) {
             throw new IllegalArgumentException("item must not be null");
         }
@@ -52,11 +57,17 @@ public class GLRenderer {
      * - 如果希望跨帧保留队列，请改为双缓冲队列或手动控制 clear。
      */
     public void flush() {
-        for (Map.Entry<Shader, List<GLRenderItem>> bucket : shaderBuckets.entrySet()) {
+        for (Map.Entry<Shader, List<RenderItem>> bucket : shaderBuckets.entrySet()) {
             Shader shader = bucket.getKey();
             shader.bind();
-            shader.uploadUniforms();
-            for (GLRenderItem item : bucket.getValue()) {
+            for (RenderItem item : bucket.getValue()) {
+                // 预处理调用时机：bind 与 uploadUniforms 之间。
+                RenderContext renderContext = new RenderContext(shader, item.modelMatrix(), item);
+                if (item.preprocessor() != null) {
+                    item.preprocessor().preprocess(renderInfo, renderContext);
+                }
+
+                shader.uploadUniforms();
                 GLVertexLayout meshLayout = item.mesh().vertexLayout();
                 if (meshLayout == null) {
                     throw new IllegalStateException("Mesh vertex layout is null. Ensure mesh.upload(...) is called before submit.");
@@ -71,6 +82,13 @@ public class GLRenderer {
             }
         }
         shaderBuckets.clear();
+    }
+
+    /**
+     * 更新投影矩阵，供预处理器上传 m4_projection。
+     */
+    public void updateProjection(Matrix4f projectionMatrix) {
+        renderInfo.updateProjection(projectionMatrix);
     }
 
     /**

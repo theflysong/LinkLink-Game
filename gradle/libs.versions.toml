@@ -9,6 +9,7 @@ lwjgl = "3.3.4"
 joml = "1.10.8"
 gson = "2.13.1"
 jspecify = "1.0.0"
+iogame = "21.34"
 
 [libraries]
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
@@ -21,3 +22,4 @@ lwjgl-stb = { module = "org.lwjgl:lwjgl-stb", version.ref = "lwjgl" }
 joml = { module = "org.joml:joml", version.ref = "joml" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
+iogame = { module = "com.iohao.game:run-one-netty", version.ref = "iogame" }
