@@ -36,4 +36,8 @@ public class SpritePreprocessor {
     public static IPreprocessor processor(@NonNull Vector4f color, @NonNull Sprite sprite) {
         return (info, ctx) -> preprocess(info, ctx, color, sprite);
     }
+
+    public static IPreprocessor processor(@NonNull Sprite sprite) {
+        return (info, ctx) -> preprocess(info, ctx, new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), sprite);
+    }
 }

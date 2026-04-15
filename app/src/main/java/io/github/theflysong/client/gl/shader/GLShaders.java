@@ -4,6 +4,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import io.github.theflysong.data.Identifier;
+import io.github.theflysong.data.ResourceLocation;
 import io.github.theflysong.data.ResourceType;
 import io.github.theflysong.util.Side;
 import io.github.theflysong.util.SideOnly;
@@ -23,8 +24,8 @@ import io.github.theflysong.util.registry.SimpleRegistry;
 public final class GLShaders {
     public static final Registry<Shader> SHADERS = new SimpleRegistry<>();
 
-    public static final Deferred<Shader> SPRITE_OVERLAY = GLShaders.registerFromConfig(
-            new Identifier("linklink", ResourceType.SHADER, "sprite_overlay"));
+    public static final Deferred<Shader> SPRITE = GLShaders.registerFromConfig("sprite");
+    public static final Deferred<Shader> SPRITE_OVERLAY = GLShaders.registerFromConfig("sprite_overlay");
 
     private GLShaders() {
     }
@@ -36,10 +37,14 @@ public final class GLShaders {
         return SHADERS.register(shaderId, supplier);
     }
 
+    public static Deferred<Shader> register(String shaderId, Supplier<Shader> supplier) {
+        return register(new Identifier(shaderId), supplier);
+    }
+
     /**
      * 便捷注册：由 shader 配置文件创建 Shader。
      */
-    public static Deferred<Shader> registerFromConfig(Identifier shaderId, Identifier configLocation) {
+    public static Deferred<Shader> registerFromConfig(Identifier shaderId, ResourceLocation configLocation) {
         return register(shaderId, () -> Shader.fromConfig(configLocation));
     }
 
@@ -47,22 +52,38 @@ public final class GLShaders {
      * 便捷注册：由 shader 配置文件创建 Shader。
      */
     public static Deferred<Shader> registerFromConfig(Identifier shaderId) {
-        return registerFromConfig(shaderId, new Identifier("linklink", ResourceType.SHADER, shaderId.path() + ".json"));
-    }
-
-    public static Shader getOrThrow(Identifier shaderId) {
-        return SHADERS.getOrThrow(shaderId).get();
+        return registerFromConfig(shaderId, new ResourceLocation("linklink", ResourceType.SHADER, shaderId.path() + ".json"));
     }
 
     /**
-     * 获取 Deferred Shader（不会触发构造）。
+     * 便捷注册：由 shader 配置文件创建 Shader。
      */
-    public static Optional<Deferred<Shader>> get(Identifier shaderId) {
+    public static Deferred<Shader> registerFromConfig(String shaderId) {
+        return registerFromConfig(new Identifier(shaderId));
+    }
+
+    public static Shader getOrThrow(Identifier shaderId) {
+        return SHADERS.getOrThrow(shaderId);
+    }
+
+    public static Shader getOrThrow(String shaderId) {
+        return getOrThrow(new Identifier(shaderId));
+    }
+
+    public static Optional<Shader> get(Identifier shaderId) {
         return SHADERS.get(shaderId);
+    }
+
+    public static Optional<Shader> get(String shaderId) {
+        return get(new Identifier(shaderId));
     }
 
     public static boolean isRegistered(Identifier shaderId) {
         return SHADERS.containsKey(shaderId);
+    }
+
+    public static boolean isRegistered(String shaderId) {
+        return isRegistered(new Identifier(shaderId));
     }
 
     /**
@@ -71,8 +92,7 @@ public final class GLShaders {
     public static void closeAll() {
         for (Identifier shaderId : SHADERS.keys()) {
             SHADERS.get(shaderId)
-                    .filter(Deferred::isInitialized)
-                    .ifPresent(deferred -> deferred.get().close());
+                    .ifPresent(shader -> shader.close());
         }
     }
 }

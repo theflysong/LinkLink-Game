@@ -4,6 +4,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import io.github.theflysong.data.Identifier;
+import io.github.theflysong.data.ResourceLocation;
 import io.github.theflysong.data.ResourceType;
 import io.github.theflysong.util.Side;
 import io.github.theflysong.util.SideOnly;
@@ -19,9 +20,9 @@ public final class Sprites {
     public static final Registry<Sprite> SPRITES = new SimpleRegistry<>();
 
     public static final Deferred<Sprite> CHIPPED_GEM = registerFromConfig(
-            new Identifier("linklink", ResourceType.SPRITE, "chipped_gem"));
+            "gem.chipped");
     public static final Deferred<Sprite> GEM3 = registerFromConfig(
-            new Identifier("linklink", ResourceType.SPRITE, "gem3"));
+            "gem3");
 
     private Sprites() {
     }
@@ -30,35 +31,55 @@ public final class Sprites {
         return SPRITES.register(spriteId, supplier);
     }
 
-    public static Deferred<Sprite> registerFromConfig(Identifier spriteId, Identifier configLocation) {
+    public static Deferred<Sprite> register(String spriteId, Supplier<Sprite> supplier) {
+        return register(new Identifier(spriteId), supplier);
+    }
+
+    public static Deferred<Sprite> registerFromConfig(Identifier spriteId, ResourceLocation configLocation) {
         return register(spriteId, () -> Sprite.fromConfig(configLocation));
     }
 
     public static Deferred<Sprite> registerFromConfig(Identifier spriteId) {
-        return registerFromConfig(spriteId, new Identifier("linklink", ResourceType.SPRITE, spriteId.path() + ".json"));
+        return registerFromConfig(spriteId,
+                new ResourceLocation("linklink", ResourceType.SPRITE, spriteId.path() + ".json"));
+    }
+
+    public static Deferred<Sprite> registerFromConfig(String spriteId) {
+        return registerFromConfig(new Identifier(spriteId));
     }
 
     public static void initialize() {
         SPRITES.onInitialization();
     }
 
-    public static Optional<Deferred<Sprite>> get(Identifier spriteId) {
+    public static Optional<Sprite> get(Identifier spriteId) {
         return SPRITES.get(spriteId);
     }
 
+    public static Optional<Sprite> get(String spriteId) {
+        return get(new Identifier(spriteId));
+    }
+
     public static Sprite getOrThrow(Identifier spriteId) {
-        return SPRITES.getOrThrow(spriteId).get();
+        return SPRITES.getOrThrow(spriteId);
+    }
+
+    public static Sprite getOrThrow(String spriteId) {
+        return getOrThrow(new Identifier(spriteId));
     }
 
     public static boolean isRegistered(Identifier spriteId) {
         return SPRITES.containsKey(spriteId);
     }
 
+    public static boolean isRegistered(String spriteId) {
+        return isRegistered(new Identifier(spriteId));
+    }
+
     public static void closeAll() {
         for (Identifier spriteId : SPRITES.keys()) {
             SPRITES.get(spriteId)
-                    .filter(Deferred::isInitialized)
-                    .ifPresent(deferred -> deferred.get().close());
+                    .ifPresent(sprite -> sprite.close());
         }
     }
 }

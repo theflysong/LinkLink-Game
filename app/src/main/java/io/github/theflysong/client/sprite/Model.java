@@ -8,8 +8,9 @@ import io.github.theflysong.client.gl.mesh.GLMeshBuilder;
 import io.github.theflysong.client.gl.mesh.GLMeshData;
 import io.github.theflysong.client.gl.mesh.GLVertexLayout;
 import io.github.theflysong.client.gl.mesh.GLVertexLayouts;
-import io.github.theflysong.data.ResourceLoader;
 import io.github.theflysong.data.Identifier;
+import io.github.theflysong.data.ResourceLoader;
+import io.github.theflysong.data.ResourceLocation;
 import io.github.theflysong.data.ResourceType;
 import io.github.theflysong.util.Side;
 import io.github.theflysong.util.SideOnly;
@@ -35,7 +36,7 @@ import static org.lwjgl.opengl.GL11C.GL_UNSIGNED_INT;
 public final class Model implements AutoCloseable {
     private static final Gson GSON = new Gson();
 
-    private final Identifier id;
+    private final ResourceLocation id;
     private final String type;
     private final GLVertexLayout layout;
     private final GLMeshData meshData;
@@ -52,7 +53,7 @@ public final class Model implements AutoCloseable {
         List<Float> uv = new ArrayList<>();
     }
 
-    private Model(Identifier id, String type, GLVertexLayout layout, GLMeshData meshData) {
+    private Model(ResourceLocation id, String type, GLVertexLayout layout, GLMeshData meshData) {
         this.id = Objects.requireNonNull(id, "id must not be null");
         this.type = Objects.requireNonNull(type, "type must not be null");
         this.layout = Objects.requireNonNull(layout, "layout must not be null");
@@ -66,7 +67,7 @@ public final class Model implements AutoCloseable {
      * - vertices 需要提供 position[2] 和 uv[2]
      * - indices 需要提供三角形索引列表
      */
-    public static Model fromConfig(Identifier modelConfigLocation) {
+    public static Model fromConfig(ResourceLocation modelConfigLocation) {
         String json = ResourceLoader.loadText(modelConfigLocation);
         ModelDefinition definition;
         try {
@@ -93,7 +94,7 @@ public final class Model implements AutoCloseable {
         return new Model(modelConfigLocation, definition.type, layout, meshData);
     }
 
-    private static Identifier parseVertexLayoutLocation(Identifier base, String value) {
+    private static Identifier parseVertexLayoutLocation(ResourceLocation base, String value) {
         int sep = value.indexOf(':');
         if (sep > 0 && sep < value.length() - 1) {
             String namespace = value.substring(0, sep);
@@ -101,9 +102,9 @@ public final class Model implements AutoCloseable {
             if (path.startsWith("vertexlayout/")) {
                 path = path.substring("vertexlayout/".length());
             }
-            return new Identifier(namespace, ResourceType.VERTEX_LAYOUT, path);
+            return new Identifier(namespace, path);
         }
-        return new Identifier(base.namespace(), ResourceType.VERTEX_LAYOUT, value.toLowerCase());
+        return new Identifier(base.namespace(), value.toLowerCase());
     }
 
     private static GLMeshData buildMeshData(GLVertexLayout layout,
@@ -145,7 +146,7 @@ public final class Model implements AutoCloseable {
         }
     }
 
-    public Identifier id() {
+    public ResourceLocation id() {
         return id;
     }
 

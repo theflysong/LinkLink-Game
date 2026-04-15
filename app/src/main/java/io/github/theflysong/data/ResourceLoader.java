@@ -32,11 +32,11 @@ public class ResourceLoader {
     }
 
     @Nullable
-    public static InputStream loadFile(Identifier location) {
+    public static InputStream loadFile(ResourceLocation location) {
         return loadFile(location.toPath());
     }
 
-    public static String loadText(Identifier location) {
+    public static String loadText(ResourceLocation location) {
         StringBuilder sb = new StringBuilder();
         InputStream file = Objects.requireNonNull(loadFile(location), "Couldn't load file from " + location);
         try (BufferedReader br = new BufferedReader(new InputStreamReader(file, StandardCharsets.UTF_8))) {
@@ -53,7 +53,7 @@ public class ResourceLoader {
         return sb.toString();
     }
 
-    public static ByteBuffer loadBinary(Identifier location) {
+    public static ByteBuffer loadBinary(ResourceLocation location) {
         try (InputStream stream = Objects.requireNonNull(ResourceLoader.loadFile(location), "Couldn't load file from " + location)) {
             byte[] bytes = stream.readAllBytes();
             ByteBuffer buffer = ByteBuffer.allocateDirect(bytes.length);

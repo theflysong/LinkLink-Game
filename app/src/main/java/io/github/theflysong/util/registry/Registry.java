@@ -25,12 +25,17 @@ public interface Registry<V> {
     /**
      * 按 key 查询值。
      */
-    Optional<Deferred<V>> get(Identifier key);
+    Optional<V> get(Identifier key);
+
+    /**
+     * 按 key 查询值。
+     */
+    Optional<V> get(String key);
 
     /**
      * 按 key 查询值，若不存在则抛异常。
      */
-    default Deferred<V> getOrThrow(Identifier key) {
+    default V getOrThrow(Identifier key) {
         return get(key).orElseThrow(() -> new IllegalArgumentException("No value registered for key: " + key));
     }
 
@@ -45,7 +50,21 @@ public interface Registry<V> {
     boolean containsKey(Identifier key);
 
     /**
+     * 判断 key 是否已注册。
+     */
+    boolean containsKey(String key);
+
+    /**
      * 返回所有已注册 key 的快照。
      */
     Set<Identifier> keys();
+
+    /**
+     * 反向查询：根据值获取对应的 key。
+     *
+     * 注意：调用前请先确认 containsValue()。
+     *
+     * @throws IllegalArgumentException 当值未注册时抛出。
+     */
+    Identifier getKey(V value);
 }

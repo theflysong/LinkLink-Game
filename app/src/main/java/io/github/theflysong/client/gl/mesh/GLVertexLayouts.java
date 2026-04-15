@@ -3,9 +3,9 @@ package io.github.theflysong.client.gl.mesh;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
 import io.github.theflysong.data.Identifier;
-import io.github.theflysong.data.ResourceType;
 import io.github.theflysong.util.Side;
 import io.github.theflysong.util.SideOnly;
 import io.github.theflysong.util.registry.Deferred;
@@ -43,14 +43,12 @@ public class GLVertexLayouts {
      *
      * 单顶点占用 16 字节。
      */
-    public static final Deferred<GLVertexLayout> SPRITE = register(new Identifier("linklink", ResourceType.VERTEX_LAYOUT, "sprite"),
+    public static final Deferred<GLVertexLayout> SPRITE = register("sprite",
             () -> new GLVertexLayout(
-                16,
-                List.of(
-                    GLVertexAttribute.floating(0, 2, GL_FLOAT, false, 0),
-                    GLVertexAttribute.floating(1, 2, GL_FLOAT, false, 8)
-                )
-            ));
+                    16,
+                    List.of(
+                            GLVertexAttribute.floating(0, 2, GL_FLOAT, false, 0),
+                            GLVertexAttribute.floating(1, 2, GL_FLOAT, false, 8))));
 
     /**
      * 可直接用于 3D 网格的布局：position3 + uv2。
@@ -61,27 +59,33 @@ public class GLVertexLayouts {
      *
      * 单顶点占用 20 字节。
      */
-    public static final Deferred<GLVertexLayout> P3U2 = register(new Identifier("linklink", ResourceType.VERTEX_LAYOUT, "p3u2"),
+    public static final Deferred<GLVertexLayout> P3U2 = register("p3u2",
             () -> new GLVertexLayout(
-                20,
-                List.of(
-                    GLVertexAttribute.floating(0, 3, GL_FLOAT, false, 0),
-                    GLVertexAttribute.floating(1, 2, GL_FLOAT, false, 12)
-                )
-            ));
+                    20,
+                    List.of(
+                            GLVertexAttribute.floating(0, 3, GL_FLOAT, false, 0),
+                            GLVertexAttribute.floating(1, 2, GL_FLOAT, false, 12))));
 
-        /**
+    /**
      * 注册一个新布局。
      */
     public static Deferred<GLVertexLayout> register(Identifier layoutId,
-                                                    java.util.function.Supplier<GLVertexLayout> supplier) {
+            Supplier<GLVertexLayout> supplier) {
         return LAYOUTS.register(layoutId, supplier);
     }
 
-     /**
+    /**
+     * 注册一个新布局。
+     */
+    public static Deferred<GLVertexLayout> register(String layoutId,
+            Supplier<GLVertexLayout> supplier) {
+        return LAYOUTS.register(new Identifier(layoutId), supplier);
+    }
+
+    /**
      * 根据配置文件中的布局名解析预设布局。
      */
     public static GLVertexLayout resolve(Identifier layoutId) {
-        return LAYOUTS.getOrThrow(layoutId).get();
+        return LAYOUTS.getOrThrow(layoutId);
     }
 }
