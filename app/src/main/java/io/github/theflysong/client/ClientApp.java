@@ -9,7 +9,7 @@ import static io.github.theflysong.App.LOGGER;
 import io.github.theflysong.client.gl.Window;
 import io.github.theflysong.client.gl.mesh.GLGpuMesh;
 import io.github.theflysong.client.gl.shader.GLShaders;
-import io.github.theflysong.client.gui.ExampleTextureScreen;
+import io.github.theflysong.client.gui.ExampleScreen;
 import io.github.theflysong.client.gui.GuiRenderer;
 import io.github.theflysong.client.gui.GuiScreen;
 import io.github.theflysong.client.render.GemRenderer;
@@ -136,6 +136,6 @@ public final class ClientApp {
 
     private void setupGui() {
         gui = new GuiRenderer(guiRenderer);
-        guiScreen = new ExampleTextureScreen();
+        guiScreen = new ExampleScreen();
     }
 }

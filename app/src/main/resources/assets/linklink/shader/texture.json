@@ -6,6 +6,7 @@
         "m4_model": "mat4",
         "m4_projection": "mat4",
         "sam_texture": "sampler2D",
-        "uv_rect": "vec4"
+        "uv_rect": "vec4",
+        "v4_tint_color": "vec4"
     }
 }
