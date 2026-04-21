@@ -84,12 +84,12 @@ public class LevelRenderer extends GuiRenderer {
 
     private Matrix4f computeBarModelMatrix(String barId, GameLevel level, Matrix4f baseMatrix) {
         if (TOTAL_BAR_ID.equals(barId)) {
-            return computeTotalBarMatrix(level);
+            return computeTotalBarMatrix(baseMatrix, level);
         }
         return baseMatrix;
     }
 
-    private Matrix4f computeTotalBarMatrix(GameLevel level) {
+    private Matrix4f computeTotalBarMatrix(Matrix4f baseMatrix, GameLevel level) {
         GameMap map = level.gameMap();
         MapRenderer.MapBounds bounds = mapRenderer.mapBounds(map);
         if (bounds.width() <= 0.0f || bounds.height() <= 0.0f) {
@@ -113,8 +113,7 @@ public class LevelRenderer extends GuiRenderer {
         float topY = centerY - barHeight * 0.5f;
 
         // 构造 modelMatrix：左上角为原点，局部空间为 [0, 1]^2
-        return new Matrix4f()
-                .identity()
+        return new Matrix4f(baseMatrix)
                 .translate(leftX, topY, 0.0f)
                 .scale(barWidth, barHeight, 1.0f);
     }
