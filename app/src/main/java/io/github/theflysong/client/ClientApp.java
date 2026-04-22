@@ -1,5 +1,8 @@
 package io.github.theflysong.client;
 
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_TAB;
+import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
+
 import org.joml.Matrix4f;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -49,6 +52,7 @@ public final class ClientApp {
     private @Nullable GLGpuMesh atlasDebugMesh;
     private final InputDispatcher inputDispatcher = new InputDispatcher();
     private final GameMapInputHandler gameMapInputHandler = new GameMapInputHandler(() -> gameLevel, mapRenderer);
+    private boolean showExampleScreen = true;
 
     public void run() {
         LOGGER.info("Creating window: {}x{}, title={}", (int) WINDOW_WIDTH, (int) WINDOW_HEIGHT, WINDOW_TITLE);
@@ -56,7 +60,8 @@ public final class ClientApp {
                 .onInit(this::init)
                 .onRender(this::render)
                 .onWindowSize(this::onWindowSize)
-            .onMouseButton(this::onMouseButton)
+                .onMouseButton(this::onMouseButton)
+                .onKey(this::onKey)
                 .onCleanup(this::cleanup)
                 .run();
     }
@@ -87,8 +92,12 @@ public final class ClientApp {
     }
 
     private void render() {
-        if (levelRenderer != null && exampleScreen != null) {
-            levelRenderer.renderScreen(exampleScreen);
+        if (levelRenderer != null) {
+            if (showExampleScreen && exampleScreen != null) {
+                levelRenderer.renderScreen(exampleScreen);
+            } else if (!showExampleScreen && levelScreen != null) {
+                levelRenderer.renderScreen(levelScreen);
+            }
         }
     }
 
@@ -150,17 +159,21 @@ public final class ClientApp {
     }
 
     private boolean handleGuiLeftClick(MouseInputContext context) {
-        if (exampleScreen == null) {
-            return false;
+        if (showExampleScreen) {
+            return exampleScreen != null && exampleScreen.handleMouseClick(context);
+        } else {
+            return levelScreen != null && levelScreen.handleMouseClick(context);
         }
-        return exampleScreen.handleMouseClick(context);
     }
 
     private void onWindowSize(long windowHandle, int windowWidth, int windowHeight) {
-        if (exampleScreen == null) {
-            return;
+        GuiScreenSpace screenSpace = GuiScreenSpace.fromViewportSize(windowWidth, windowHeight);
+        if (exampleScreen != null) {
+            exampleScreen.refreshLayout(screenSpace);
         }
-        exampleScreen.refreshLayout(GuiScreenSpace.fromViewportSize(windowWidth, windowHeight));
+        if (levelScreen != null) {
+            levelScreen.refreshLayout(screenSpace);
+        }
     }
 
     private void onMouseButton(long windowHandle,
@@ -190,6 +203,13 @@ public final class ClientApp {
                 mods);
 
         inputDispatcher.dispatch(context);
+    }
+
+    private void onKey(long window, int key, int scancode, int action, int mods) {
+        if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
+            showExampleScreen = !showExampleScreen;
+            LOGGER.info("Switched to {}", showExampleScreen ? "ExampleScreen" : "LevelScreen");
+        }
     }
 
 }

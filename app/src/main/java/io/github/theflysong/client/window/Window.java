@@ -64,6 +64,7 @@ public class Window {
 	private Runnable onCleanup;
 	private MouseButtonCallback onMouseButton;
 	private WindowSizeCallback onWindowSize;
+	private KeyCallback onKey;
 
 	public Window(int width, int height, String title) {
 		this.width = width;
@@ -99,6 +100,11 @@ public class Window {
 
 	public Window onWindowSize(WindowSizeCallback onWindowSize) {
 		this.onWindowSize = onWindowSize;
+		return this;
+	}
+
+	public Window onKey(KeyCallback onKey) {
+		this.onKey = onKey;
 		return this;
 	}
 
@@ -163,6 +169,9 @@ public class Window {
 		glfwSetKeyCallback(handle, (window, key, scancode, action, mods) -> {
 			if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 				glfwSetWindowShouldClose(window, true);
+			}
+			if (onKey != null) {
+				onKey.onKey(window, key, scancode, action, mods);
 			}
 		});
 
