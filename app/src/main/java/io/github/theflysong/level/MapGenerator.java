@@ -20,9 +20,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class MapGenerator {
 	public GameMap generate(MapGenConfiguration configuration) {
 		Objects.requireNonNull(configuration, "configuration must not be null");
-		return configuration.preset()
-				? generatePreset(configuration)
-				: generateRandom(configuration);
+		return generateFromMap(configuration);
 	}
 
 	public GameMap generate(String levelPathOrName) {
@@ -41,73 +39,95 @@ public class MapGenerator {
 		return generate(MapGenConfiguration.loadPreset());
 	}
 
-	private GameMap generateRandom(MapGenConfiguration configuration) {
+	private GameMap generateFromMap(MapGenConfiguration configuration) {
 		int width = configuration.width();
 		int height = configuration.height();
-		int cells = width * height;
+		int[][] map = configuration.map();
+		Map<Integer, MapGenConfiguration.PresetGemRule> presetGemRules = configuration.presetGemRules();
+		List<Gem> randomGemTypes = configuration.randomGemTypes();
+		List<GemColor> randomGemColors = configuration.randomGemColors();
 
-		List<Gem> gemTypes = configuration.gemTypes();
-		if (gemTypes.isEmpty()) {
-			throw new IllegalArgumentException("Random level requires non-empty gemTypes");
+		if (randomGemTypes.isEmpty()) {
+			throw new IllegalArgumentException("Random generation requires non-empty randomGemTypes");
+		}
+		if (randomGemColors.isEmpty()) {
+			throw new IllegalArgumentException("Random generation requires non-empty randomGemColors");
 		}
 
-		int colorLimit = configuration.gemColors();
-		GemColor[] allColors = GemColor.values();
-		if (colorLimit <= 0 || colorLimit > allColors.length) {
-			throw new IllegalArgumentException("Invalid gemColors: " + colorLimit);
-		}
-
-		List<GemColor> availableColors = new ArrayList<>(colorLimit);
-		for (int i = 0; i < colorLimit; i++) {
-			availableColors.add(allColors[i]);
-		}
-
-		List<GemInstance> pool = new ArrayList<>(cells);
-		int pairCount = cells / 2;
 		ThreadLocalRandom random = ThreadLocalRandom.current();
+		Map<Integer, GemInstance> resolvedPresetGems = resolvePresetGems(presetGemRules, random);
+
+		GemInstance[][] gems = new GemInstance[width][height];
+		List<Cell> randomCells = new ArrayList<>();
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x++) {
+				int marker = map[y][x];
+				if (marker == 0) {
+					gems[x][y] = null;
+					continue;
+				}
+				if (marker == -1) {
+					randomCells.add(new Cell(x, y));
+					continue;
+				}
+
+				GemInstance presetGem = resolvedPresetGems.get(marker);
+				if (presetGem == null) {
+					throw new IllegalArgumentException("Map references undefined preset gem id: " + marker);
+				}
+				gems[x][y] = presetGem;
+			}
+		}
+
+		fillRandomPairs(gems, randomCells, randomGemTypes, randomGemColors, random);
+		return new GameMap(gems, width, height);
+	}
+
+	private static Map<Integer, GemInstance> resolvePresetGems(Map<Integer, MapGenConfiguration.PresetGemRule> rules,
+	                                                          ThreadLocalRandom random) {
+		if (rules.isEmpty()) {
+			return Map.of();
+		}
+		Map<Integer, GemInstance> result = new java.util.HashMap<>(rules.size());
+		for (Map.Entry<Integer, MapGenConfiguration.PresetGemRule> entry : rules.entrySet()) {
+			MapGenConfiguration.PresetGemRule rule = entry.getValue();
+			Gem gem = rule.gemTypes().get(random.nextInt(rule.gemTypes().size()));
+			GemColor color = rule.colors().get(random.nextInt(rule.colors().size()));
+			result.put(entry.getKey(), new GemInstance(gem, color));
+		}
+		return result;
+	}
+
+	private static void fillRandomPairs(GemInstance[][] gems,
+	                                   List<Cell> randomCells,
+	                                   List<Gem> randomGemTypes,
+	                                   List<GemColor> randomGemColors,
+	                                   ThreadLocalRandom random) {
+		if (randomCells.isEmpty()) {
+			return;
+		}
+		if (randomCells.size() % 2 != 0) {
+			throw new IllegalArgumentException("Count of -1 cells must be even, got " + randomCells.size());
+		}
+
+		List<GemInstance> pool = new ArrayList<>(randomCells.size());
+		int pairCount = randomCells.size() / 2;
 		for (int i = 0; i < pairCount; i++) {
-			Gem gem = gemTypes.get(random.nextInt(gemTypes.size()));
-			GemColor color = availableColors.get(random.nextInt(availableColors.size()));
+			Gem gem = randomGemTypes.get(random.nextInt(randomGemTypes.size()));
+			GemColor color = randomGemColors.get(random.nextInt(randomGemColors.size()));
 			GemInstance instance = new GemInstance(gem, color);
 			pool.add(instance);
 			pool.add(instance);
 		}
 		Collections.shuffle(pool, random);
+		Collections.shuffle(randomCells, random);
 
-		GemInstance[][] gems = new GemInstance[width][height];
-		int index = 0;
-		for (int y = 0; y < height; y++) {
-			for (int x = 0; x < width; x++) {
-				gems[x][y] = pool.get(index++);
-			}
+		for (int i = 0; i < randomCells.size(); i++) {
+			Cell cell = randomCells.get(i);
+			gems[cell.x()][cell.y()] = pool.get(i);
 		}
-		return new GameMap(gems, width, height);
 	}
 
-	private GameMap generatePreset(MapGenConfiguration configuration) {
-		int width = configuration.width();
-		int height = configuration.height();
-		int[][] presetMap = configuration.presetMap();
-		Map<Integer, GemInstance> gemById = configuration.presetGemById();
-
-		if (presetMap == null) {
-			throw new IllegalArgumentException("Preset level requires map data");
-		}
-		if (gemById.isEmpty()) {
-			throw new IllegalArgumentException("Preset level requires preset gem definitions");
-		}
-
-		GemInstance[][] gems = new GemInstance[width][height];
-		for (int y = 0; y < height; y++) {
-			for (int x = 0; x < width; x++) {
-				int id = presetMap[y][x];
-				GemInstance instance = gemById.get(id);
-				if (instance == null) {
-					throw new IllegalArgumentException("Preset map references unknown gem id: " + id);
-				}
-				gems[x][y] = instance;
-			}
-		}
-		return new GameMap(gems, width, height);
+	private record Cell(int x, int y) {
 	}
 }

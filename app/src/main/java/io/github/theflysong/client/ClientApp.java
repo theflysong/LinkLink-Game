@@ -81,7 +81,7 @@ public final class ClientApp {
         Matrix4f projection = new Matrix4f().ortho(-aspect, aspect, -1.0f, 1.0f, -1.0f, 1.0f);
         renderer.updateProjection(projection);
 
-        gameLevel = new GameLevel(new MapGenerator().generateHard());
+        gameLevel = new GameLevel(new MapGenerator().generate("bridge"));
         levelRenderer = new LevelRenderer(renderer);
         levelScreen = new LevelScreen(gameLevel, levelRenderer, gameMapInputHandler);
         exampleScreen = new ExampleScreen();

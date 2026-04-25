@@ -12,7 +12,7 @@ import org.jspecify.annotations.NonNull;
 public enum GemColor {
     ICE(0.35f, 0.90f, 1.00f, 1.0f),
     FIRE(1.00f, 0.35f, 0.00f, 1.0f),
-    DIRT(0.60f, 0.40f, 0.20f, 1.0f),
+    EARTH(0.60f, 0.40f, 0.20f, 1.0f),
     LIFE(0.20f, 0.80f, 0.20f, 1.0f),
     DARK(0.20f, 0.20f, 0.20f, 1.0f);
 
