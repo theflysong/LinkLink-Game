@@ -52,7 +52,7 @@ public final class ClientApp {
     private @Nullable GLGpuMesh atlasDebugMesh;
     private final InputDispatcher inputDispatcher = new InputDispatcher();
     private final GameMapInputHandler gameMapInputHandler = new GameMapInputHandler(() -> gameLevel, mapRenderer);
-    private boolean showExampleScreen = true;
+    private boolean showExampleScreen = false;
 
     public void run() {
         LOGGER.info("Creating window: {}x{}, title={}", (int) WINDOW_WIDTH, (int) WINDOW_HEIGHT, WINDOW_TITLE);

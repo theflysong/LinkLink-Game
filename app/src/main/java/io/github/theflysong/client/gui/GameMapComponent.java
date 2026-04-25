@@ -4,6 +4,7 @@ import static io.github.theflysong.App.LOGGER;
 
 import org.joml.Matrix4f;
 import org.joml.Vector2i;
+import org.joml.Vector4i;
 import org.joml.Vector2f;
 import org.jspecify.annotations.NonNull;
 
@@ -38,11 +39,13 @@ public final class GameMapComponent extends GuiComponent {
 
     @Override
     protected void renderComponent(@NonNull GuiRenderer renderer) {
+        Vector4i tippedCell = gameLevel.lastTippedCell();
         Vector2i selectedCell = gameMapInputHandler.currentSelection().orElse(null);
         GameMapInputHandler.MatchPathEffect matchPath = gameMapInputHandler.currentMatchPath().orElse(null);
         levelRenderer.renderMap(
                 gameLevel,
                 new Matrix4f().identity(),
+                tippedCell,
                 selectedCell,
                 matchPath == null ? null : matchPath.points(),
                 matchPath == null ? 1.0f : matchPath.alpha(),

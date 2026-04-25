@@ -7,7 +7,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.HashSet;
 
+import org.joml.Vector4i;
 import org.joml.Vector2i;
 import org.jspecify.annotations.NonNull;
 
@@ -15,6 +19,7 @@ import io.github.theflysong.bars.Bars;
 import io.github.theflysong.bars.EnergyBar;
 import io.github.theflysong.gem.GemInstance;
 import io.github.theflysong.level.MatchResult;
+import io.github.theflysong.level.TipResult;
 
 /**
  * 游戏关卡
@@ -25,6 +30,8 @@ import io.github.theflysong.level.MatchResult;
 public class GameLevel {
     private final GameMap gameMap;
     private final Map<String, EnergyBar> energyBars = new HashMap<>();
+    private TipResult lastAllTipResult = TipResult.noTip();
+    private Vector4i lastTippedCell = null;
 
     public GameLevel(GameMap gameMap) {
         this.gameMap = Objects.requireNonNull(gameMap, "gameMap must not be null");
@@ -50,16 +57,16 @@ public class GameLevel {
     public boolean isGameOver() {
         return isGameOver(gameMap);
     }
-    
+
     public boolean isGameOver(GameMap gameMap) {
-        for(int i  = 0; i < gameMap.width(); i++) {
-            for(int j = 0; j < gameMap.height(); j++) {
-                if(gameMap.gems[i][j] != null) {
+        for (int i = 0; i < gameMap.width(); i++) {
+            for (int j = 0; j < gameMap.height(); j++) {
+                if (gameMap.gems[i][j] != null) {
                     return false;
                 }
             }
         }
-        return true; 
+        return true;
     }
 
     public boolean noCorner(Vector2i srcPos, Vector2i dstPos) {
@@ -86,7 +93,7 @@ public class GameLevel {
         return flag;
     }
 
-    public Optional<List<Vector2i>> oneCorner(Vector2i srcPos, Vector2i dstPos ) {
+    public Optional<List<Vector2i>> oneCorner(Vector2i srcPos, Vector2i dstPos) {
         Vector2i corner1 = new Vector2i(srcPos.x, dstPos.y);
         Vector2i corner2 = new Vector2i(dstPos.x, srcPos.y);
 
@@ -104,7 +111,7 @@ public class GameLevel {
         return Optional.empty();
     }
 
-    public Optional<List<Vector2i>> twoCorners(Vector2i srcPos, Vector2i dstPos ) {
+    public Optional<List<Vector2i>> twoCorners(Vector2i srcPos, Vector2i dstPos) {
         for (int i = -1; i <= gameMap.width(); i++) {
             Vector2i corner1 = new Vector2i(i, srcPos.y);
             Vector2i corner2 = new Vector2i(i, dstPos.y);
@@ -128,7 +135,7 @@ public class GameLevel {
         return Optional.empty();
     }
 
-    public MatchResult isMatch(Vector2i srcPos, Vector2i dstPos ) {
+    public MatchResult isMatch(Vector2i srcPos, Vector2i dstPos) {
         GemInstance src = gameMap.gemAt(srcPos);
         GemInstance drc = gameMap.gemAt(dstPos);
         if (src == null || drc == null || srcPos.equals(dstPos)) {
@@ -150,12 +157,19 @@ public class GameLevel {
         }
         return MatchResult.fail();
     }
-    
+
+    public boolean isCurrentTip(Vector4i tip, Vector2i pos) {
+        return tip != null && ((tip.x == pos.x && tip.y == pos.y) || (tip.z == pos.x && tip.w == pos.y));
+    }
+
     public MatchResult tryMatch(Vector2i srcPos, Vector2i dstPos) {
         MatchResult result = isMatch(srcPos, dstPos);
         if (result.isMatch()) {
             destroyGemAt(srcPos);
             destroyGemAt(dstPos);
+            if (isCurrentTip(lastTippedCell, srcPos) || isCurrentTip(lastTippedCell, dstPos)) {
+                lastTippedCell = null;
+            }
         }
         return result;
     }
@@ -166,5 +180,54 @@ public class GameLevel {
             gem.gem().onDestroy(this, gem);
             gameMap.gems[pos.x][pos.y] = null;
         }
+    }
+
+    public TipResult tip() {
+        Set<Vector4i> tips = new HashSet<>();
+
+        gameMap.foreach((srcGem, srcCoord) -> {
+            gameMap.foreach((dstGem, dstCoord) -> {
+                if (isMatch(srcCoord, dstCoord).isMatch()) {
+                    tips.add(new Vector4i(srcCoord.x, srcCoord.y, dstCoord.x, dstCoord.y));
+                }
+            });
+        });
+        tips.removeIf(tip -> (tip.x > tip.z || (tip.x == tip.z && tip.y > tip.w)));
+        return (tips.isEmpty() ? TipResult.noTip() : TipResult.withTip(tips));
+    }
+
+    public TipResult lastTipResult() {
+        return lastAllTipResult;
+    }
+
+    public void setLastTipResult(TipResult lastTipResult) {
+        this.lastAllTipResult = lastTipResult;
+    }
+
+    public Vector4i lastTippedCell() {
+        return lastTippedCell;
+    }
+
+    public void setLastTippedCell(Vector4i lastTippedCell) {
+        this.lastTippedCell = lastTippedCell;
+    }
+
+    public void updateTips() {
+        setLastTipResult(tip());
+        // choose a random tip from the available tips
+        if (!lastAllTipResult.tips().isEmpty()) {
+            List<Vector4i> tips = new ArrayList<>(lastAllTipResult.tips());
+            if (tips.contains(lastTippedCell)) {
+                tips.remove(lastTippedCell);
+            }
+            Collections.shuffle(tips);
+            setLastTippedCell(tips.get(0));
+        } else {
+            setLastTippedCell(null);
+        }
+    }
+
+    public void refreshMap() {
+        
     }
 }
