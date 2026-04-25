@@ -59,13 +59,7 @@ public class GameMap
     }
 
     public GemInstance gemAt(Vector2i pos) {
-        if (pos.x < 0 || pos.x >= width || pos.y < 0 || pos.y >= height) {
-            if(pos.x == -1 || pos.x == width || pos.y == -1 || pos.y == height) {
-                return null; 
-            }
-            throw new IndexOutOfBoundsException("Invalid map coordinate: (" + pos.x + ", " + pos.y + ")");
-        }
-        return gems[pos.x][pos.y];
+        return gemAt(pos.x, pos.y);
     }
 
     @FunctionalInterface
@@ -83,5 +77,9 @@ public class GameMap
                 }
             }
         }
+    }
+
+    public void refreshMap() {
+        gems = MapGenerator.refreshMap(gems, width, height);
     }
 }

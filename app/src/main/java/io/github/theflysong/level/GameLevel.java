@@ -228,6 +228,6 @@ public class GameLevel {
     }
 
     public void refreshMap() {
-        
+        gameMap.refreshMap();
     }
 }

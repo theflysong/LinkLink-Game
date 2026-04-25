@@ -21,6 +21,6 @@ public record Identifier(String namespace, String path) {
 
     @Override
     public String toString() {
-        return namespace + ":" + "/" + path;
+        return namespace + ":" + path;
     }
 }

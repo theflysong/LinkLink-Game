@@ -44,7 +44,7 @@ public final class LevelScreen extends GuiScreen {
         refreshButton.setOverlayTexture(new ResourceLocation(ResourceType.TEXTURE, "gui/overlay/shuffle.png"));
 
         refreshButton.setOnClick((component, context) -> {
-            // gameLevel.gameMap().refresh();
+            gameLevel.refreshMap();
             return true;
         });
 
