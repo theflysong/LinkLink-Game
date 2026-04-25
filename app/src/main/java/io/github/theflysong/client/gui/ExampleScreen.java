@@ -145,21 +145,21 @@ public final class ExampleScreen extends GuiScreen {
             new ResourceLocation("linklink", ResourceType.TEXTURE, "gui/button_disabled.png"),
             new ResourceLocation("linklink", ResourceType.TEXTURE, "gui/button_ready.png"),
             new ResourceLocation("linklink", ResourceType.TEXTURE, "gui/button.png"),
-            GuiAnchor.BOTTOM,
+            GuiAnchor.RIGHT,
+            -100.0f,
             0.0f,
-            -50.0f,
             50.0f,
             50.0f));
-        button.setOnClick((component, context) -> {
-            if (button.enabled()) {
-                TextStyle current = clickableText.style();
-                clickableText.setStyle(current.withStrikethrough(!current.strikethrough()));
-            }
-            return true;
-        });
+        // button.setOnClick((component, context) -> {
+        //     if (button.enabled()) {
+        //         TextStyle current = clickableText.style();
+        //         clickableText.setStyle(current.withStrikethrough(!current.strikethrough()));
+        //     }
+        //     return true;
+        // });
         // button.setDisabled(true);
 
-        button.setOverlayTexture(new ResourceLocation(ResourceType.TEXTURE, "gui/overlay/shuffle.png"));
+        // button.setOverlayTexture(new ResourceLocation(ResourceType.TEXTURE, "gui/overlay/shuffle.png"));
     }
 
     @Override

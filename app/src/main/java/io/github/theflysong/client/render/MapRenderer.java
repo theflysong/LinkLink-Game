@@ -4,6 +4,7 @@ import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector2i;
 import org.joml.Vector4f;
+import org.joml.Vector4i;
 
 import io.github.theflysong.gem.GemInstance;
 import io.github.theflysong.level.GameMap;
@@ -47,20 +48,26 @@ public class MapRenderer {
 				applyHighlight(color.x),
 				applyHighlight(color.y),
 				applyHighlight(color.z),
-				color.w
-		);
+				color.w);
 	}
 
 	public static final int CANVAS_COLOR = 0xCBCCD4;
 	public static final int MATCH_PATH_COLOR = 0xFFE45A;
 	public static final int HIT_RANGE_COLOR = 0x34C759;
 	public static final int RC_DEBUG_RECT_COLOR = 0x000000;
+	public static final int SELECTION_OVERLAY_COLOR = 0xFFFFFF;
+	// 浅黄色的提示覆盖层颜色
+	public static final int TIPS_OVERLAY_COLOR = 0xFFFACD;
 
-	private static Vector4f rgba(int hex) {
+	private static Vector4f rgba(int hex, float alpha) {
 		float r = ((hex >> 16) & 0xFF) / 255.0f;
 		float g = ((hex >> 8) & 0xFF) / 255.0f;
 		float b = (hex & 0xFF) / 255.0f;
-		return new Vector4f(r, g, b, 1.0f);
+		return new Vector4f(r, g, b, alpha);
+	}
+
+	private static Vector4f rgba(int hex) {
+		return rgba(hex, 1.0f);
 	}
 
 	public MapRenderer() {
@@ -104,47 +111,48 @@ public class MapRenderer {
 				0.0f,
 				0.92f,
 				0.92f,
-				new Vector4f(1.0f, 1.0f, 1.0f, 0.22f));
+				rgba(SELECTION_OVERLAY_COLOR, 0.22f));
+	}
+
+	private void renderTipsOverlay(Renderer renderer, Matrix4f modelMatrix) {
+		geometryRenderer().renderRectangle(
+				renderer,
+				modelMatrix,
+				0.0f,
+				0.0f,
+				0.92f,
+				0.92f,
+				rgba(TIPS_OVERLAY_COLOR, 0.8f));
 	}
 
 	public void renderCanvas(Renderer renderer, Matrix4f modelMatrix) {
 		geometryRenderer().renderRectangle(renderer, modelMatrix, rgba(CANVAS_COLOR));
 	}
 
-	public void renderMap(Renderer renderer, Matrix4f modelMatrix, GameMap map) {
-		renderMap(renderer, modelMatrix, map, null);
+	public boolean isSelected(Vector2i cell, Vector2i selectedCell) {
+		return selectedCell != null && selectedCell.x == cell.x && selectedCell.y == cell.y;
 	}
 
-	public void renderMap(Renderer renderer, Matrix4f modelMatrix, GameMap map, Vector2i selectedCell) {
-		renderMap(renderer, modelMatrix, map, selectedCell, null, 1.0f);
+	public boolean isTipped(Vector2i cell, Vector4i tippedCell) {
+		if (tippedCell == null) {
+			return false;
+		}
+
+		if (cell.x == tippedCell.x && cell.y == tippedCell.y) {
+			return true;
+		}
+
+		return cell.x == tippedCell.z && cell.y == tippedCell.w;
 	}
 
 	public void renderMap(Renderer renderer,
-						 Matrix4f modelMatrix,
-						 GameMap map,
-						 Vector2i selectedCell,
-						 List<Vector2i> matchPathPoints,
-						 float matchPathAlpha,
-						 boolean showHitRange) {
-		renderMapInternal(renderer, modelMatrix, map, selectedCell, matchPathPoints, matchPathAlpha, showHitRange);
-	}
-
-	public void renderMap(Renderer renderer,
-						 Matrix4f modelMatrix,
-						 GameMap map,
-						 Vector2i selectedCell,
-						 List<Vector2i> matchPathPoints,
-						 float matchPathAlpha) {
-		renderMapInternal(renderer, modelMatrix, map, selectedCell, matchPathPoints, matchPathAlpha, false);
-	}
-
-	private void renderMapInternal(Renderer renderer,
-							 Matrix4f modelMatrix,
-							 GameMap map,
-							 Vector2i selectedCell,
-							 List<Vector2i> matchPathPoints,
-							 float matchPathAlpha,
-							 boolean showHitRange) {
+			Matrix4f modelMatrix,
+			GameMap map,
+			Vector4i tippedCell,
+			Vector2i selectedCell,
+			List<Vector2i> matchPathPoints,
+			float matchPathAlpha,
+			boolean showHitRange) {
 		if (renderer == null) {
 			throw new IllegalArgumentException("renderer must not be null");
 		}
@@ -164,8 +172,11 @@ public class MapRenderer {
 		// renderRcDebugRect(renderer, modelMatrix);
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x++) {
-				Vector2f center = slotToRender(map, new Vector2i(x, y));
-				boolean selected = selectedCell != null && selectedCell.x == x && selectedCell.y == y;
+				Vector2i cell = new Vector2i(x, y);
+				Vector2f center = slotToRender(map, cell);
+				boolean selected = isSelected(cell, selectedCell);
+				boolean tipped = isTipped(cell, tippedCell);
+
 				Matrix4f newMatrix = new Matrix4f(modelMatrix)
 						.translate(center.x, center.y, 0.0f)
 						.scale(layout.gemSize, layout.gemSize, 1.0f);
@@ -184,6 +195,10 @@ public class MapRenderer {
 				if (selected) {
 					renderSelectionOverlay(renderer, newMatrix);
 				}
+
+				if (!selected && tipped) {
+					renderTipsOverlay(renderer, newMatrix);
+				}
 			}
 		}
 
@@ -193,7 +208,7 @@ public class MapRenderer {
 	private void renderRcDebugRect(Renderer renderer, Matrix4f modelMatrix) {
 		geometryRenderer().renderRectangle(
 				renderer,
-				new Matrix4f(modelMatrix).translate(0, 0,  -1).scale(0.4f, 0.4f, 1.0f),
+				new Matrix4f(modelMatrix).translate(0, 0, -1).scale(0.4f, 0.4f, 1.0f),
 				rgba(RC_DEBUG_RECT_COLOR));
 	}
 
@@ -204,10 +219,10 @@ public class MapRenderer {
 	}
 
 	private void renderMatchPath(Renderer renderer,
-							 Matrix4f modelMatrix,
-							 Layout layout,
-							 List<Vector2i> points,
-							 float alpha) {
+			Matrix4f modelMatrix,
+			Layout layout,
+			List<Vector2i> points,
+			float alpha) {
 		if (points == null || points.size() < 2 || alpha <= 0.0f) {
 			return;
 		}
@@ -304,8 +319,7 @@ public class MapRenderer {
 		MapBounds canvas = mapCanvasBounds(map);
 		Vector2f rc = new Vector2f(
 				canvas.left() + nc.x * canvas.width(),
-				canvas.top() - nc.y * canvas.height()
-		);
+				canvas.top() - nc.y * canvas.height());
 		LOGGER.info("Pick map cell at normalized coordinates ({}, {}), converted to render coordinates ({}, {})",
 				nc.x, nc.y, rc.x, rc.y);
 
@@ -420,10 +434,10 @@ public class MapRenderer {
 	}
 
 	public record MapBounds(float left,
-						float right,
-						float top,
-						float bottom,
-						float width,
-						float height) {
+			float right,
+			float top,
+			float bottom,
+			float width,
+			float height) {
 	}
 }

@@ -59,7 +59,7 @@ public class GameMapInputHandler {
 		this.mapRenderer = Objects.requireNonNull(mapRenderer, "mapRenderer must not be null");
 	}
 
-	public boolean handleClick(Vector2f nc, MouseInputContext context) {
+	public boolean handleClick(Vector2f nc, MouseInputContext context) {    
 		if (!context.isLeftPress()) {
 			return false;
 		}

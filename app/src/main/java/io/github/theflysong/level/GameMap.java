@@ -5,6 +5,7 @@ import org.joml.Vector2i;
 import io.github.theflysong.gem.GemInstance;
 
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * 游戏地图
@@ -65,5 +66,22 @@ public class GameMap
             throw new IndexOutOfBoundsException("Invalid map coordinate: (" + pos.x + ", " + pos.y + ")");
         }
         return gems[pos.x][pos.y];
+    }
+
+    @FunctionalInterface
+    public static interface GameMapForeachFunc {
+        void accept(GemInstance gem, Vector2i coord);
+    }
+
+    public void foreach(GameMapForeachFunc func)
+    {
+        for (int y = 0 ; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                GemInstance gem = gems[x][y];
+                if (gem != null) {
+                    func.accept(gem, new Vector2i(x, y));
+                }
+            }
+        }
     }
 }

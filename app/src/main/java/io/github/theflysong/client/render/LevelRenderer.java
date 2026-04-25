@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.joml.Matrix4f;
 import org.joml.Vector2i;
+import org.joml.Vector4i;
 
 import io.github.theflysong.bars.EnergyBar;
 import io.github.theflysong.client.gui.GuiRenderer;
@@ -28,29 +29,19 @@ public class LevelRenderer extends GuiRenderer {
         super(renderer);
     }
 
-    public void renderLevel(GameLevel level) {
-        renderLevel(level, new Matrix4f().identity(), null, null, 1.0f);
-    }
-
     public void renderLevel(GameLevel level,
             Matrix4f modelMatrix,
+            Vector4i tippedCell,
             Vector2i selectedCell,
             List<Vector2i> matchPathPoints,
             float matchPathAlpha) {
-        renderMap(level, modelMatrix, selectedCell, matchPathPoints, matchPathAlpha);
+        renderMap(level, modelMatrix, tippedCell, selectedCell, matchPathPoints, matchPathAlpha, false);
         renderBars(level, modelMatrix);
     }
 
     public void renderMap(GameLevel level,
             Matrix4f modelMatrix,
-            Vector2i selectedCell,
-            List<Vector2i> matchPathPoints,
-            float matchPathAlpha) {
-        renderMap(level, modelMatrix, selectedCell, matchPathPoints, matchPathAlpha, false);
-    }
-
-    public void renderMap(GameLevel level,
-            Matrix4f modelMatrix,
+            Vector4i tippedCell,
             Vector2i selectedCell,
             List<Vector2i> matchPathPoints,
             float matchPathAlpha,
@@ -65,13 +56,8 @@ public class LevelRenderer extends GuiRenderer {
         Matrix4f mapProjection = new Matrix4f().ortho(-aspect, aspect, -1.0f, 1.0f, -1.0f, 1.0f);
 
         renderer().updateProjection(mapProjection);
-        mapRenderer.renderMap(renderer(),
-                modelMatrix == null ? new Matrix4f().identity() : new Matrix4f(modelMatrix),
-                gameMap,
-                selectedCell,
-                matchPathPoints,
-                matchPathAlpha,
-                showHitRange);
+        Matrix4f thisModel = modelMatrix == null ? new Matrix4f().identity() : new Matrix4f(modelMatrix);
+        mapRenderer.renderMap(renderer(), thisModel, gameMap, tippedCell, selectedCell, matchPathPoints, matchPathAlpha, showHitRange);
         renderer().flush();
 
         renderer().updateProjection(screenSpace.projectionMatrix());
