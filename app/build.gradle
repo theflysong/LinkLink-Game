@@ -57,3 +57,14 @@ tasks.named('test') {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
 }
+
+tasks.named('jar') {
+    // Build a runnable fat jar that bundles the runtime classpath.
+    manifest {
+        attributes 'Main-Class': 'io.github.theflysong.App'
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.runtimeClasspath.findAll { it.name.endsWith('.jar') }.collect { zipTree(it) }
+    }
+}
