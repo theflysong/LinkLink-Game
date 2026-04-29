@@ -33,7 +33,7 @@ public final class GuiTextComponent extends GuiComponent {
             return;
         }
 
-        renderer.drawText(text, font, anchor(), offsetX(), offsetY(), style);
+        renderer.drawText(text, font, anchor(), offsetX(), offsetY(), GuiRenderer.DEFAULT_GUI_Z, style);
     }
 
     public @NonNull String text() {

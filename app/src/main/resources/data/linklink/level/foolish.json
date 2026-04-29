@@ -1,0 +1,10 @@
+{
+    "name": "map.linklink.foolish",
+    "width": 2,
+    "height": 1,
+    "randomGemColors": "all",
+    "randomGemTypes": "all",
+    "map": [
+        [-1, -1]
+    ]
+}

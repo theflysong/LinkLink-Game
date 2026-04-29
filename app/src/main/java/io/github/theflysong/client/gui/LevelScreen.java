@@ -1,9 +1,7 @@
 package io.github.theflysong.client.gui;
 
-import org.joml.Matrix4f;
 import org.joml.Vector4f;
 
-import io.github.theflysong.client.render.GeometryRenderer;
 import io.github.theflysong.client.render.LevelRenderer;
 import io.github.theflysong.data.ResourceLocation;
 import io.github.theflysong.data.ResourceType;
@@ -27,6 +25,9 @@ public final class LevelScreen extends GuiScreen {
     private GuiButtonComponent refreshButton;
     private GuiButtonComponent tipsButton;
     private long passOverlayStartNanos = -1L;
+
+    private static final float ENDGAME_OVERLAY_Z = 0.0020f;
+    private static final float ENDGAME_MARK_Z = 0.0030f;
 
     public LevelScreen(GameLevel gameLevel,
             LevelRenderer levelRenderer,
@@ -83,18 +84,18 @@ public final class LevelScreen extends GuiScreen {
 
                 GuiScreenSpace screenSpace = renderer.currentScreenSpace();
 
-                Matrix4f overlayModel = new Matrix4f()
-                        .identity()
-                        .translate(screenSpace.width() * 0.5f, screenSpace.height() * 0.5f, 0.0f)
-                        .scale(screenSpace.width(), screenSpace.height(), 1.0f);
-                GeometryRenderer.instance().renderRectangle(
-                        levelRenderer.renderer(),
-                        overlayModel,
-                        new Vector4f(0.0f, 0.0f, 0.0f, 0.35f));
-
-
-
-
+                renderer.drawRectangle(
+                    GuiAnchor.CENTER,
+                    0.0f,
+                    0.0f,
+                    screenSpace.width(),
+                    screenSpace.height(),
+                    ENDGAME_OVERLAY_Z,
+                    0.0f,
+                    0.0f,
+                    0.0f,
+                    0.35f);
+                renderer.renderer().flush();
 
                 if (passOverlayStartNanos < 0L) {
                     passOverlayStartNanos = System.nanoTime();
@@ -113,7 +114,8 @@ public final class LevelScreen extends GuiScreen {
                         0.0f,
                         -100.0f,
                         passWidth,
-                        passHeight);
+                        passHeight,
+                        ENDGAME_MARK_Z);
             }
         });
     }

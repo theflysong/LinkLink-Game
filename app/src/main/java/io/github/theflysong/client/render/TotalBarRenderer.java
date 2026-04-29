@@ -54,7 +54,8 @@ public class TotalBarRenderer implements IBarRenderer {
 
         // 绘制空背景（total_bar_empty）
         levelRenderer.drawTexture(TOTAL_BAR_EMPTY,
-                modelMatrix);
+            modelMatrix,
+            LevelRenderer.DEFAULT_GUI_Z);
 
         if (percent <= 0.0f) {
             return;
@@ -71,7 +72,8 @@ public class TotalBarRenderer implements IBarRenderer {
         Matrix4f fullBarMatrix = new Matrix4f(modelMatrix)
                 .translate(0.0f, 1.0f - percent, 0.0f)
                 .scale(1.0f, percent, 1.0f);
-        levelRenderer.drawTextureRegion(TOTAL_BAR_FULL, fullBarMatrix, 0.0f, 1.0f - percent, 1.0f, 1.0f);
+        levelRenderer.drawTextureRegion(TOTAL_BAR_FULL, fullBarMatrix, LevelRenderer.DEFAULT_GUI_Z,
+            0.0f, 1.0f - percent, 1.0f, 1.0f);
     }
 
     private static float clamp(float value, float min, float max) {

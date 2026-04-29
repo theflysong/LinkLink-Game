@@ -7,6 +7,7 @@ import io.github.theflysong.client.gl.mesh.GLMeshBuilder;
 import io.github.theflysong.client.gl.mesh.GLMeshData;
 import io.github.theflysong.client.gl.mesh.GLVertexLayouts;
 import io.github.theflysong.client.gl.shader.GLShaders;
+import io.github.theflysong.client.render.GeometryRenderer;
 import io.github.theflysong.client.render.RenderContext;
 import io.github.theflysong.client.render.RenderItem;
 import io.github.theflysong.client.render.RenderableObject;
@@ -29,8 +30,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static io.github.theflysong.App.LOGGER;
+import static org.lwjgl.opengl.GL11C.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11C.GL_DEPTH_TEST;
 import static org.lwjgl.opengl.GL11C.GL_UNSIGNED_INT;
+import static org.lwjgl.opengl.GL11C.glClear;
 import static org.lwjgl.opengl.GL11C.glDisable;
 import static org.lwjgl.opengl.GL11C.glEnable;
 import static org.lwjgl.opengl.GL11C.glIsEnabled;
@@ -40,7 +43,7 @@ import static org.lwjgl.opengl.GL11C.glIsEnabled;
  */
 public class GuiRenderer implements AutoCloseable {
     private static final Vector4f WHITE = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
-    private static final float GUI_FRONT_Z = -0.95f;
+    public static final float DEFAULT_GUI_Z = 0;
 
     private final Renderer renderer;
     private final GLGpuMesh quadMesh;
@@ -60,16 +63,17 @@ public class GuiRenderer implements AutoCloseable {
 
     public void renderScreen(@NonNull GuiScreen screen) {
         boolean wasDepthEnabled = glIsEnabled(GL_DEPTH_TEST);
-        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_DEPTH_TEST);
         try {
+            glClear(GL_DEPTH_BUFFER_BIT);
             currentScreenSpace = GuiScreenSpace.fromCurrentViewport();
             renderer.updateProjection(currentScreenSpace.projectionMatrix());
             screen.render(this);
             renderer.flush();
         } finally {
             currentScreenSpace = null;
-            if (wasDepthEnabled) {
-                glEnable(GL_DEPTH_TEST);
+            if (!wasDepthEnabled) {
+                glDisable(GL_DEPTH_TEST);
             }
         }
     }
@@ -86,8 +90,9 @@ public class GuiRenderer implements AutoCloseable {
             float offsetX,
             float offsetY,
             float width,
-            float height) {
-        drawTexture(textureLocation, anchor, offsetX, offsetY, width, height, WHITE);
+            float height,
+            float z) {
+        drawTexture(textureLocation, anchor, offsetX, offsetY, width, height, z, WHITE);
     }
     public void drawTexture(@NonNull ResourceLocation textureLocation,
             @NonNull GuiAnchor anchor,
@@ -95,11 +100,12 @@ public class GuiRenderer implements AutoCloseable {
             float offsetY,
             float width,
             float height,
+            float z,
             float r,
             float g,
             float b,
             float a) {
-        drawTexture(textureLocation, anchor, offsetX, offsetY, width, height, new Vector4f(r, g, b, a));
+        drawTexture(textureLocation, anchor, offsetX, offsetY, width, height, z, new Vector4f(r, g, b, a));
     }
     public void drawTexture(@NonNull ResourceLocation textureLocation,
             @NonNull GuiAnchor anchor,
@@ -107,38 +113,42 @@ public class GuiRenderer implements AutoCloseable {
             float offsetY,
             float width,
             float height,
+            float z,
             @NonNull Vector4f tintColor) {
         GLTexture2D texture = textureCache.get(textureLocation);
         if (texture == null) {
             texture = loadTexture(textureLocation);
             textureCache.put(textureLocation, texture);
         }
-        drawTexture(texture, anchor, offsetX, offsetY, width, height, tintColor);
-    }
-
-    public void drawTexture(@NonNull ResourceLocation textureLocation,
-            @NonNull Matrix4f modelMatrix) {
-        drawTexture(textureLocation, modelMatrix, WHITE);
+        drawTexture(texture, anchor, offsetX, offsetY, width, height, z, tintColor);
     }
 
     public void drawTexture(@NonNull ResourceLocation textureLocation,
             @NonNull Matrix4f modelMatrix,
+            float z) {
+        drawTexture(textureLocation, modelMatrix, z, WHITE);
+    }
+
+    public void drawTexture(@NonNull ResourceLocation textureLocation,
+            @NonNull Matrix4f modelMatrix,
+            float z,
             float r,
             float g,
             float b,
             float a) {
-        drawTexture(textureLocation, modelMatrix, new Vector4f(r, g, b, a));
+        drawTexture(textureLocation, modelMatrix, z, new Vector4f(r, g, b, a));
     }
 
     public void drawTexture(@NonNull ResourceLocation textureLocation,
             @NonNull Matrix4f modelMatrix,
+            float z,
             @NonNull Vector4f tintColor) {
         GLTexture2D texture = textureCache.get(textureLocation);
         if (texture == null) {
             texture = loadTexture(textureLocation);
             textureCache.put(textureLocation, texture);
         }
-        drawTexture(texture, modelMatrix, tintColor);
+        drawTexture(texture, modelMatrix, z, tintColor);
     }
 
     public void drawTexture(@NonNull GLTexture2D texture,
@@ -146,8 +156,9 @@ public class GuiRenderer implements AutoCloseable {
             float offsetX,
             float offsetY,
             float width,
-            float height) {
-        drawTexture(texture, anchor, offsetX, offsetY, width, height, WHITE);
+            float height,
+            float z) {
+        drawTexture(texture, anchor, offsetX, offsetY, width, height, z, WHITE);
     }
     public void drawTexture(@NonNull GLTexture2D texture,
             @NonNull GuiAnchor anchor,
@@ -155,11 +166,12 @@ public class GuiRenderer implements AutoCloseable {
             float offsetY,
             float width,
             float height,
+            float z,
             float r,
             float g,
             float b,
             float a) {
-        drawTexture(texture, anchor, offsetX, offsetY, width, height, new Vector4f(r, g, b, a));
+        drawTexture(texture, anchor, offsetX, offsetY, width, height, z, new Vector4f(r, g, b, a));
     }
     public void drawTexture(@NonNull GLTexture2D texture,
             @NonNull GuiAnchor anchor,
@@ -167,37 +179,42 @@ public class GuiRenderer implements AutoCloseable {
             float offsetY,
             float width,
             float height,
+            float z,
             @NonNull Vector4f tintColor) {
         if (currentScreenSpace == null) {
             throw new IllegalStateException("drawTexture must be called during renderScreen");
         }
 
-        Matrix4f model = calcModel(anchor, offsetX, offsetY, width, height);
+        Matrix4f model = calcModel(anchor, offsetX, offsetY, width, height, z);
         submitTexture(texture, model, tintColor, 0.0f, 0.0f, 1.0f, 1.0f);
     }
 
     public void drawTexture(@NonNull GLTexture2D texture,
-            @NonNull Matrix4f modelMatrix) {
-        drawTexture(texture, modelMatrix, WHITE);
+            @NonNull Matrix4f modelMatrix,
+            float z) {
+        drawTexture(texture, modelMatrix, z, WHITE);
     }
 
     public void drawTexture(@NonNull GLTexture2D texture,
             @NonNull Matrix4f modelMatrix,
+            float z,
             float r,
             float g,
             float b,
             float a) {
-        drawTexture(texture, modelMatrix, new Vector4f(r, g, b, a));
+        drawTexture(texture, modelMatrix, z, new Vector4f(r, g, b, a));
     }
 
     public void drawTexture(@NonNull GLTexture2D texture,
             @NonNull Matrix4f modelMatrix,
+            float z,
             @NonNull Vector4f tintColor) {
         if (currentScreenSpace == null) {
             throw new IllegalStateException("drawTexture must be called during renderScreen");
         }
 
-        submitTexture(texture, modelMatrix, tintColor, 0.0f, 0.0f, 1.0f, 1.0f);
+        Matrix4f model = applyZ(modelMatrix, z);
+        submitTexture(texture, model, tintColor, 0.0f, 0.0f, 1.0f, 1.0f);
     }
 
     private void submitTexture(GLTexture2D texture,
@@ -229,24 +246,27 @@ public class GuiRenderer implements AutoCloseable {
             float offsetY,
             float width,
             float height,
+            float z,
             float uMin,
             float vMin,
             float uMax,
             float vMax) {
-        drawTextureRegion(textureLocation, anchor, offsetX, offsetY, width, height, WHITE, uMin, vMin, uMax, vMax);
+        drawTextureRegion(textureLocation, anchor, offsetX, offsetY, width, height, z, WHITE, uMin, vMin, uMax, vMax);
     }
 
     public void drawTextureRegion(@NonNull ResourceLocation textureLocation,
             @NonNull Matrix4f modelMatrix,
+            float z,
             float uMin,
             float vMin,
             float uMax,
             float vMax) {
-        drawTextureRegion(textureLocation, modelMatrix, WHITE, uMin, vMin, uMax, vMax);
+        drawTextureRegion(textureLocation, modelMatrix, z, WHITE, uMin, vMin, uMax, vMax);
     }
 
     public void drawTextureRegion(@NonNull ResourceLocation textureLocation,
             @NonNull Matrix4f modelMatrix,
+            float z,
             @NonNull Vector4f tintColor,
             float uMin,
             float vMin,
@@ -257,7 +277,8 @@ public class GuiRenderer implements AutoCloseable {
         }
 
         GLTexture2D texture = textureCache.computeIfAbsent(textureLocation, GuiRenderer::loadTexture);
-        submitTexture(texture, modelMatrix, tintColor, uMin, vMin, uMax, vMax);
+        Matrix4f model = applyZ(modelMatrix, z);
+        submitTexture(texture, model, tintColor, uMin, vMin, uMax, vMax);
     }
 
     public void drawTextureRegion(@NonNull ResourceLocation textureLocation,
@@ -266,6 +287,7 @@ public class GuiRenderer implements AutoCloseable {
             float offsetY,
             float width,
             float height,
+            float z,
             @NonNull Vector4f tintColor,
             float uMin,
             float vMin,
@@ -277,7 +299,7 @@ public class GuiRenderer implements AutoCloseable {
 
         GLTexture2D texture = textureCache.computeIfAbsent(textureLocation, GuiRenderer::loadTexture);
 
-        Matrix4f model = calcModel(anchor, offsetX, offsetY, width, height);
+        Matrix4f model = calcModel(anchor, offsetX, offsetY, width, height, z);
         submitTexture(texture, model, tintColor, uMin, vMin, uMax, vMax);
     }
 
@@ -285,8 +307,133 @@ public class GuiRenderer implements AutoCloseable {
             @Nullable GuiFont font,
             @NonNull GuiAnchor anchor,
             float offsetX,
-            float offsetY) {
-        drawText(text, font, anchor, offsetX, offsetY, TextStyle.normal());
+            float offsetY,
+            float z) {
+        drawText(text, font, anchor, offsetX, offsetY, z, TextStyle.normal());
+    }
+
+    public void drawRectangle(@NonNull GuiAnchor anchor,
+            float offsetX,
+            float offsetY,
+            float width,
+            float height,
+            float z) {
+        drawRectangle(anchor, offsetX, offsetY, width, height, z, WHITE);
+    }
+
+    public void drawRectangle(@NonNull GuiAnchor anchor,
+            float offsetX,
+            float offsetY,
+            float width,
+            float height,
+            float z,
+            float r,
+            float g,
+            float b,
+            float a) {
+        drawRectangle(anchor, offsetX, offsetY, width, height, z, new Vector4f(r, g, b, a));
+    }
+
+    public void drawRectangle(@NonNull GuiAnchor anchor,
+            float offsetX,
+            float offsetY,
+            float width,
+            float height,
+            float z,
+            @NonNull Vector4f color) {
+        if (currentScreenSpace == null) {
+            throw new IllegalStateException("drawRectangle must be called during renderScreen");
+        }
+
+        Matrix4f model = calcCenteredModel(anchor, offsetX, offsetY, width, height, z);
+        GeometryRenderer.instance().renderRectangle(renderer, model, color);
+    }
+
+    public void drawRectangle(@NonNull Matrix4f modelMatrix,
+            float z) {
+        drawRectangle(modelMatrix, z, WHITE);
+    }
+
+    public void drawRectangle(@NonNull Matrix4f modelMatrix,
+            float z,
+            float r,
+            float g,
+            float b,
+            float a) {
+        drawRectangle(modelMatrix, z, new Vector4f(r, g, b, a));
+    }
+
+    public void drawRectangle(@NonNull Matrix4f modelMatrix,
+            float z,
+            @NonNull Vector4f color) {
+        if (currentScreenSpace == null) {
+            throw new IllegalStateException("drawRectangle must be called during renderScreen");
+        }
+
+        Matrix4f model = applyZ(modelMatrix, z);
+        GeometryRenderer.instance().renderRectangle(renderer, model, color);
+    }
+
+    public void drawTriangle(@NonNull GuiAnchor anchor,
+            float offsetX,
+            float offsetY,
+            float width,
+            float height,
+            float z) {
+        drawTriangle(anchor, offsetX, offsetY, width, height, z, WHITE);
+    }
+
+    public void drawTriangle(@NonNull GuiAnchor anchor,
+            float offsetX,
+            float offsetY,
+            float width,
+            float height,
+            float z,
+            float r,
+            float g,
+            float b,
+            float a) {
+        drawTriangle(anchor, offsetX, offsetY, width, height, z, new Vector4f(r, g, b, a));
+    }
+
+    public void drawTriangle(@NonNull GuiAnchor anchor,
+            float offsetX,
+            float offsetY,
+            float width,
+            float height,
+            float z,
+            @NonNull Vector4f color) {
+        if (currentScreenSpace == null) {
+            throw new IllegalStateException("drawTriangle must be called during renderScreen");
+        }
+
+        Matrix4f model = calcCenteredModel(anchor, offsetX, offsetY, width, height, z);
+        GeometryRenderer.instance().renderTriangle(renderer, model, color);
+    }
+
+    public void drawTriangle(@NonNull Matrix4f modelMatrix,
+            float z) {
+        drawTriangle(modelMatrix, z, WHITE);
+    }
+
+    public void drawTriangle(@NonNull Matrix4f modelMatrix,
+            float z,
+            float r,
+            float g,
+            float b,
+            float a) {
+        drawTriangle(modelMatrix, z, new Vector4f(r, g, b, a));
+    }
+
+    public void drawTriangle(@NonNull Matrix4f modelMatrix,
+            float z,
+            @NonNull Vector4f color) {
+        if (currentScreenSpace == null) {
+            throw new IllegalStateException("drawTriangle must be called during renderScreen");
+        }
+
+        Matrix4f model = applyZ(modelMatrix, z);
+        GeometryRenderer.instance().renderTriangle(renderer, model, color);
     }
 
     /**
@@ -299,6 +446,7 @@ public class GuiRenderer implements AutoCloseable {
             @NonNull GuiAnchor anchor,
             float offsetX,
             float offsetY,
+            float z,
             @NonNull TextStyle style) {
         if (currentScreenSpace == null) {
             throw new IllegalStateException("drawText must be called during renderScreen");
@@ -320,14 +468,14 @@ public class GuiRenderer implements AutoCloseable {
 
         for (int i = 0; i <= text.length();) {
             if (i == text.length()) {
-                drawTextDecorations(style, tintColor, lineStartX, penX, baselineY, resolvedFont);
+                drawTextDecorations(style, tintColor, lineStartX, penX, baselineY, resolvedFont, z);
                 break;
             }
 
             int cp = text.codePointAt(i);
             int step = Character.charCount(cp);
             if (cp == '\n') {
-                drawTextDecorations(style, tintColor, lineStartX, penX, baselineY, resolvedFont);
+                drawTextDecorations(style, tintColor, lineStartX, penX, baselineY, resolvedFont, z);
                 penX = originX;
                 baselineY += resolvedFont.lineHeightPx();
                 lineStartX = originX;
@@ -344,7 +492,8 @@ public class GuiRenderer implements AutoCloseable {
                         glyph.width(),
                         glyph.height(),
                         tintColor,
-                        style.italic() ? style.italicShear() : 0.0f);
+                    style.italic() ? style.italicShear() : 0.0f,
+                    z);
 
                 if (style.bold()) {
                     drawGlyph(glyphTexture,
@@ -353,7 +502,8 @@ public class GuiRenderer implements AutoCloseable {
                             glyph.width(),
                             glyph.height(),
                             tintColor,
-                            style.italic() ? style.italicShear() : 0.0f);
+                            style.italic() ? style.italicShear() : 0.0f,
+                            z);
                 }
             }
 
@@ -375,10 +525,11 @@ public class GuiRenderer implements AutoCloseable {
             float width,
             float height,
             Vector4f tintColor,
-            float italicShear) {
+            float italicShear,
+            float z) {
         Matrix4f model = new Matrix4f()
                 .identity()
-                .translate(x, y, GUI_FRONT_Z);
+                .translate(x, y, z);
 
         if (italicShear != 0.0f) {
             Matrix4f shear = new Matrix4f()
@@ -408,7 +559,8 @@ public class GuiRenderer implements AutoCloseable {
             float lineStartX,
             float lineEndX,
             float baselineY,
-            GuiFont font) {
+            GuiFont font,
+            float z) {
         float lineWidth = lineEndX - lineStartX;
         if (lineWidth <= 0.0f) {
             return;
@@ -417,16 +569,16 @@ public class GuiRenderer implements AutoCloseable {
         float thickness = Math.max(1.0f, style.decorationThicknessPx());
         if (style.underline()) {
             float y = baselineY + Math.max(1.0f, font.sizePx() * 0.10f);
-            drawSolidRect(lineStartX, y, lineWidth, thickness, tintColor);
+            drawSolidRect(lineStartX, y, lineWidth, thickness, tintColor, z);
         }
         if (style.strikethrough()) {
             float y = baselineY - font.ascentPx() * 0.32f;
-            drawSolidRect(lineStartX, y, lineWidth, thickness, tintColor);
+            drawSolidRect(lineStartX, y, lineWidth, thickness, tintColor, z);
         }
     }
 
-    private void drawSolidRect(float x, float y, float width, float height, Vector4f tintColor) {
-        drawGlyph(whiteTexture, x, y, width, height, tintColor, 0.0f);
+    private void drawSolidRect(float x, float y, float width, float height, Vector4f tintColor, float z) {
+        drawGlyph(whiteTexture, x, y, width, height, tintColor, 0.0f, z);
     }
 
     public void drawSprite(@NonNull Sprite sprite,
@@ -435,13 +587,14 @@ public class GuiRenderer implements AutoCloseable {
             float offsetX,
             float offsetY,
             float width,
-            float height) {
+            float height,
+            float z) {
         if (currentScreenSpace == null) {
             throw new IllegalStateException("drawSprite must be called during renderScreen");
         }
         // 从 sprite 中构造一个RenderItem，提交给renderer
         RenderableObject renderable = lookupSpriteCache(sprite, preprocessor);
-        Matrix4f model = calcModel(anchor, offsetX, offsetY, width, height);
+        Matrix4f model = calcModel(anchor, offsetX, offsetY, width, height, z);
         // 此处需要进行上下翻转以适配 GUI 坐标系(y向下)
         model.scale(1.0f, -1.0f, 1.0f);
         // 偏移到中心, 因为GUI渲染时定位位于左上角
@@ -485,12 +638,30 @@ public class GuiRenderer implements AutoCloseable {
     }
 
     private Matrix4f calcModel(
-            @NonNull GuiAnchor anchor, float offsetX, float offsetY, float width, float height) {
+            @NonNull GuiAnchor anchor, float offsetX, float offsetY, float width, float height, float z) {
         Vector2f topLeft = currentScreenSpace.resolveTopLeft(anchor, offsetX, offsetY, width, height);
         Matrix4f model = new Matrix4f()
                 .identity()
-                .translate(topLeft.x, topLeft.y, GUI_FRONT_Z)
+                .translate(topLeft.x, topLeft.y, z)
                 .scale(width, height, 1.0f);
+        return model;
+    }
+
+        private Matrix4f calcCenteredModel(
+            @NonNull GuiAnchor anchor, float offsetX, float offsetY, float width, float height, float z) {
+        Vector2f topLeft = currentScreenSpace.resolveTopLeft(anchor, offsetX, offsetY, width, height);
+        float centerX = topLeft.x + width * 0.5f;
+        float centerY = topLeft.y + height * 0.5f;
+        Matrix4f model = new Matrix4f()
+            .identity()
+            .translate(centerX, centerY, z)
+            .scale(width, height, 1.0f);
+        return model;
+        }
+
+    private static Matrix4f applyZ(@NonNull Matrix4f modelMatrix, float z) {
+        Matrix4f model = new Matrix4f(modelMatrix);
+        model.m32(z);
         return model;
     }
 

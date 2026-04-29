@@ -25,7 +25,7 @@ public final class GuiSpriteComponent extends GuiComponent {
 
     @Override
     protected void renderComponent(@NonNull GuiRenderer renderer) {
-        renderer.drawSprite(sprite, anchor(), preprocessor, offsetX(), offsetY(), width(), height());
+        renderer.drawSprite(sprite, anchor(), preprocessor, offsetX(), offsetY(), width(), height(), GuiRenderer.DEFAULT_GUI_Z);
     }
 
     public @NonNull Sprite sprite() {

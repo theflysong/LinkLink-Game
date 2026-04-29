@@ -21,6 +21,7 @@ import java.util.function.Supplier;
  */
 public final class GuiButtonComponent extends GuiComponent {
     private static final long DEFAULT_READY_HOLD_NANOS = 140_000_000L;
+    private static final float Z_LAYER_STEP = 0.0001f;
 
     private enum VisualState {
         NORMAL,
@@ -32,6 +33,8 @@ public final class GuiButtonComponent extends GuiComponent {
     private ResourceLocation readyTexture;
     private ResourceLocation normalTexture;
     private Supplier<@Nullable ResourceLocation> overlayTextureSupplier = () -> null;
+    private @Nullable OverlayRenderer overlayRenderer;
+    private float baseZ = GuiRenderer.DEFAULT_GUI_Z;
     private long readyHoldNanos = DEFAULT_READY_HOLD_NANOS;
     private long readyUntilNanos;
 
@@ -56,11 +59,14 @@ public final class GuiButtonComponent extends GuiComponent {
     protected void renderComponent(@NonNull GuiRenderer renderer) {
         VisualState state = resolveVisualState(renderer);
         ResourceLocation texture = resolveTexture(state);
-        renderer.drawTexture(texture, anchor(), offsetX(), offsetY(), width(), height());
+        renderer.drawTexture(texture, anchor(), offsetX(), offsetY(), width(), height(), baseZ);
 
         ResourceLocation overlayTexture = overlayTextureSupplier.get();
         if (overlayTexture != null) {
-            renderer.drawTexture(overlayTexture, anchor(), offsetX(), offsetY(), width(), height());
+            renderer.drawTexture(overlayTexture, anchor(), offsetX(), offsetY(), width(), height(), overlayTextureZ());
+        }
+        if (overlayRenderer != null) {
+            overlayRenderer.render(renderer, this, overlayRendererZ());
         }
     }
 
@@ -149,6 +155,22 @@ public final class GuiButtonComponent extends GuiComponent {
         this.overlayTextureSupplier = () -> overlayTexture;
     }
 
+    public float baseZ() {
+        return baseZ;
+    }
+
+    public void setBaseZ(float baseZ) {
+        this.baseZ = baseZ;
+    }
+
+    public @Nullable OverlayRenderer overlayRenderer() {
+        return overlayRenderer;
+    }
+
+    public void setOverlayRenderer(@Nullable OverlayRenderer overlayRenderer) {
+        this.overlayRenderer = overlayRenderer;
+    }
+
     public long readyHoldNanos() {
         return readyHoldNanos;
     }
@@ -167,5 +189,18 @@ public final class GuiButtonComponent extends GuiComponent {
 
     public boolean disabled() {
         return !enabled();
+    }
+
+    private float overlayTextureZ() {
+        return baseZ + Z_LAYER_STEP;
+    }
+
+    private float overlayRendererZ() {
+        return baseZ + Z_LAYER_STEP * 2.0f;
+    }
+
+    @FunctionalInterface
+    public interface OverlayRenderer {
+        void render(@NonNull GuiRenderer renderer, @NonNull GuiButtonComponent button, float z);
     }
 }

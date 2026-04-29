@@ -39,6 +39,12 @@ public class MapRenderer {
 	// 减少 90% 的暗度
 	public static final float HIGHLIGHT_MASK = 0.1f;
 
+	private static final float Z_CANVAS      = 0.0001f;
+	private static final float Z_SLOT        = 0.0002f;
+	private static final float Z_GEM         = 0.0003f;
+	private static final float Z_MATCH_PATH  = 0.0005f;
+	private static final float Z_OVERLAY     = 0.0007f;
+
 	public static float applyHighlight(float colorComponent) {
 		return 1 - (1 - colorComponent) * HIGHLIGHT_MASK;
 	}
@@ -99,7 +105,7 @@ public class MapRenderer {
 		float shadowSize = 1 / 16.0f;
 		// 位置位于矩形的上边界, 水平居中
 		float shadowCenterY = 7.5f * shadowSize;
-		geometryRenderer().renderRectangle(renderer, modelMatrix,
+		geometryRenderer().renderRectangle(renderer, new Matrix4f(modelMatrix).translate(0, 0,  (Z_GEM - Z_SLOT) * 0.5f),
 				0.0f, shadowCenterY, 1, shadowSize, shadowColor);
 	}
 
@@ -168,36 +174,57 @@ public class MapRenderer {
 
 		Layout layout = computeLayout(width, height);
 		renderCanvas(renderer, new Matrix4f(modelMatrix)
+				.translate(0.0f, 0.0f, Z_CANVAS)
 				.scale(layout.canvasWidth, layout.canvasHeight, 1.0f));
 		// renderRcDebugRect(renderer, modelMatrix);
+		// Pass 1: canvas + slot backgrounds.
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x++) {
+				Vector2i cell = new Vector2i(x, y);
+				Vector2f center = slotToRender(map, cell);
+				boolean selected = isSelected(cell, selectedCell);
+				Matrix4f slotMatrix = new Matrix4f(modelMatrix)
+						.translate(center.x, center.y, Z_SLOT)
+						.scale(layout.gemSize, layout.gemSize, 1.0f);
+				// 先绘制槽位背景
+				renderSlot(renderer, slotMatrix, layout, selected);
+			}
+		}
+		renderer.flush();
+
+		// Pass 2: gems.
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x++) {
+				Vector2i cell = new Vector2i(x, y);
+				Vector2f center = slotToRender(map, cell);
+				Matrix4f gemMatrix = new Matrix4f(modelMatrix)
+						.translate(center.x, center.y, Z_GEM)
+						.scale(layout.gemSize, layout.gemSize, 1.0f);
+				GemInstance gem = map.gemAt(x, y);
+				if (gem != null) {
+					gemRenderer().renderGem(renderer, gem, gemMatrix);
+				}
+			}
+		}
+
+		// Pass 3: overlays + match path.
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x++) {
 				Vector2i cell = new Vector2i(x, y);
 				Vector2f center = slotToRender(map, cell);
 				boolean selected = isSelected(cell, selectedCell);
 				boolean tipped = isTipped(cell, tippedCell);
-
-				Matrix4f newMatrix = new Matrix4f(modelMatrix)
-						.translate(center.x, center.y, 0.0f)
+				Matrix4f overlayMatrix = new Matrix4f(modelMatrix)
+						.translate(center.x, center.y, Z_OVERLAY)
 						.scale(layout.gemSize, layout.gemSize, 1.0f);
-				// 先绘制槽位背景
-				renderSlot(renderer, newMatrix, layout, selected);
 				if (showHitRange) {
-					renderHitRangeOverlay(renderer, newMatrix);
+					renderHitRangeOverlay(renderer, overlayMatrix);
 				}
-
-				// 然后绘制宝石
-				GemInstance gem = map.gemAt(x, y);
-				if (gem != null) {
-					gemRenderer().renderGem(renderer, gem, newMatrix);
-				}
-
 				if (selected) {
-					renderSelectionOverlay(renderer, newMatrix);
+					renderSelectionOverlay(renderer, overlayMatrix);
 				}
-
 				if (!selected && tipped) {
-					renderTipsOverlay(renderer, newMatrix);
+					renderTipsOverlay(renderer, overlayMatrix);
 				}
 			}
 		}
@@ -253,7 +280,7 @@ public class MapRenderer {
 			float angle = (float) Math.atan2(dy, dx);
 
 			Matrix4f segment = new Matrix4f(modelMatrix)
-					.translate(midX, midY, 0.0f)
+					.translate(midX, midY, Z_MATCH_PATH)
 					.rotateZ(angle)
 					.scale(length + thickness * 0.35f, thickness, 1.0f);
 			geometryRenderer().renderRectangle(renderer, segment, lineColor);

@@ -25,7 +25,7 @@ public final class GuiTextureComponent extends GuiComponent {
 
     @Override
     protected void renderComponent(@NonNull GuiRenderer renderer) {
-        renderer.drawTexture(texture, anchor(), offsetX(), offsetY(), width(), height(), tintColor);
+        renderer.drawTexture(texture, anchor(), offsetX(), offsetY(), width(), height(), GuiRenderer.DEFAULT_GUI_Z, tintColor);
     }
 
     public @NonNull ResourceLocation texture() {
