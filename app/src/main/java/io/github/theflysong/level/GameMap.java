@@ -48,6 +48,14 @@ public class GameMap
         return height;
     }
 
+    public GameMap copy() {
+        GemInstance[][] copied = new GemInstance[width][height];
+        for (int x = 0; x < width; x++) {
+            System.arraycopy(gems[x], 0, copied[x], 0, height);
+        }
+        return new GameMap(copied, width, height);
+    }
+
     public GemInstance gemAt(int x, int y) {
         if (x < 0 || x >= width || y < 0 || y >= height) {
             if(x == -1 || x == width || y == -1 || y == height) {

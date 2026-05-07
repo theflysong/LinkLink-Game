@@ -1,0 +1,101 @@
+package io.github.theflysong.client.gui;
+
+import io.github.theflysong.client.window.Window;
+import io.github.theflysong.data.ResourceLocation;
+import io.github.theflysong.data.ResourceType;
+import io.github.theflysong.input.MouseInputContext;
+import org.joml.Vector4f;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+public final class MainMenuScreen extends GuiScreen {
+    private static final ResourceLocation BUTTON_DISABLED =
+            new ResourceLocation("linklink", ResourceType.TEXTURE, "gui/button_disabled.png");
+    private static final ResourceLocation BUTTON_READY =
+            new ResourceLocation("linklink", ResourceType.TEXTURE, "gui/button_ready.png");
+    private static final ResourceLocation BUTTON_NORMAL =
+            new ResourceLocation("linklink", ResourceType.TEXTURE, "gui/button.png");
+
+    private final Runnable onStart;
+    private final Runnable onContinue;
+    private final Runnable onExitApp;
+    private final Runnable onPK;
+    private final Consumer<String> onSelectLevel;
+    private final Supplier<String> selectedLevelLabelSupplier;
+
+    private GuiButtonComponent continueButton;
+    private GuiTextComponent selectedLevelText;
+    private String selectedLevelId;
+
+    public MainMenuScreen(@NonNull Runnable onStart,
+                          @NonNull Runnable onContinue,
+                          @NonNull Runnable onExitApp,
+                          @NonNull Runnable onPK,
+                          @NonNull Consumer<String> onSelectLevel,
+                          @NonNull Supplier<String> selectedLevelLabelSupplier) {
+        this.onStart = onStart;
+        this.onContinue = onContinue;
+        this.onExitApp = onExitApp;
+        this.onPK = onPK;
+        this.onSelectLevel = onSelectLevel;
+        this.selectedLevelLabelSupplier = selectedLevelLabelSupplier;
+        this.selectedLevelId = "simple";
+    }
+
+    @Override
+    protected void onInit(GuiRenderer renderer) {
+
+        selectedLevelText = addComponent(new GuiTextComponent(
+                "当前关卡：简单",
+                null,
+                GuiAnchor.CENTER,
+                0.0f,
+                -200.0f,
+                TextStyle.normal().withColor(new Vector4f(0.84f, 0.94f, 0.98f, 1.0f))));
+
+        addComponent(createMenuButton("开始游戏", -140.0f, () -> onStart.run()));
+        continueButton = addComponent(createMenuButton("继续游戏", -60.0f, () -> onContinue.run()));
+        addComponent(createMenuButton("关卡选择", 20.0f, () -> selectLevel(selectedLevelId)));
+        addComponent(createMenuButton("对战模式", 100.0f, () -> onPK.run()));
+        addComponent(createMenuButton("退出游戏", 180.0f, () -> onExitApp.run()));
+    }
+
+    @Override
+    protected void renderScreen(GuiRenderer renderer) {
+        // selectedLevelText.setText("当前关卡：" + selectedLevelLabelSupplier.get());
+    }
+
+    public void setContinueEnabled(boolean enabled) {
+        if (continueButton != null) {
+            continueButton.setDisabled(!enabled);
+        }
+    }
+
+    private GuiButtonComponent createMenuButton(String label, float offsetY, Runnable onClick) {
+        GuiButtonComponent button = new GuiButtonComponent(
+                BUTTON_DISABLED,
+                BUTTON_READY,
+                BUTTON_NORMAL,
+                GuiAnchor.CENTER,
+                0.0f,
+                offsetY,
+                420.0f,
+                80.0f);
+        button.setOnClick((component, context) -> {
+            onClick.run();
+            return true;
+        });
+        button.setOverlayRenderer((renderer, component, z) ->
+                renderer.drawText(label, null, component.anchor(), component.offsetX(), component.offsetY(), z + 0.001f,
+                        TextStyle.normal().withBold(true).withColor(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f))));
+        return button;
+    }
+
+    private void selectLevel(String levelId) {
+        this.selectedLevelId = levelId;
+        onSelectLevel.accept(levelId);
+    }
+}
