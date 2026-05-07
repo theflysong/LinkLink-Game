@@ -1,0 +1,30 @@
+{
+    "name": "map.linklink.island",
+    "width": 10,
+    "height": 9,
+    "randomGemColors": "all",
+    "randomGemTypes": "all",
+    "presetGems": [
+        {
+            "color": ["FIRE", "ICE", "EARTH"],
+            "type": "all",
+            "id": 1
+        },
+        {
+            "color": "all",
+            "type": ["linklink:diamond", "linklink:sapphire", "linklink:jade"],
+            "id": 2
+        }
+    ],
+    "map": [
+        [-1, -1, -1, -1, 0,  0,  0,  0,  0,  0],
+        [-1, -1, -1,  1, 0,  0,  0,  0,  0,  0],
+        [-1, -1, -1, -1, 0,  0,  0,  0,  0,  0],
+        [-1, -1,  2, -1, 0,  0,  0,  0,  0,  0],
+        [ 0,  0,  0,  0, 0,  0,  0,  0,  0,  0],
+        [ 0,  0,  0,  0, 0,  0,  1,  2, -1, -1],
+        [ 0,  0,  0,  0, 0,  0, -1, -1, -1, -1],
+        [ 0,  0,  0,  0, 0,  0, -1, -1, -1, -1],
+        [ 0,  0,  0,  0, 0,  0, -1, -1, -1, -1]
+    ]
+}

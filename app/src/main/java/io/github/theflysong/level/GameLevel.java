@@ -112,7 +112,8 @@ public class GameLevel {
     }
 
     public Optional<List<Vector2i>> twoCorners(Vector2i srcPos, Vector2i dstPos) {
-        for (int i = -1; i <= gameMap.width(); i++) {
+        int midX = (srcPos.x + dstPos.x) / 2;
+        for (int i = midX; i >= -1; i--) {
             Vector2i corner1 = new Vector2i(i, srcPos.y);
             Vector2i corner2 = new Vector2i(i, dstPos.y);
             if (gameMap.gemAt(corner1) == null && gameMap.gemAt(corner2) == null) {
@@ -121,8 +122,26 @@ public class GameLevel {
                 }
             }
         }
-
-        for (int j = -1; j <= gameMap.height(); j++) {
+        for(int i = midX + 1; i <= gameMap.width(); i++) {
+            Vector2i corner1 = new Vector2i(i, srcPos.y);
+            Vector2i corner2 = new Vector2i(i, dstPos.y);
+            if (gameMap.gemAt(corner1) == null && gameMap.gemAt(corner2) == null) {
+                if (noCorner(srcPos, corner1) && noCorner(corner1, corner2) && noCorner(corner2, dstPos)) {
+                    return Optional.of(List.of(corner1, corner2));
+                }
+            }
+        }
+        int midY = (srcPos.y + dstPos.y) / 2;
+        for (int j = midY; j >= -1; j--) {
+            Vector2i corner1 = new Vector2i(srcPos.x, j);
+            Vector2i corner2 = new Vector2i(dstPos.x, j);
+            if (gameMap.gemAt(corner1) == null && gameMap.gemAt(corner2) == null) {
+                if (noCorner(srcPos, corner1) && noCorner(corner1, corner2) && noCorner(corner2, dstPos)) {
+                    return Optional.of(List.of(corner1, corner2));
+                }
+            }
+        }
+        for(int j = midY + 1; j <= gameMap.height(); j++) {
             Vector2i corner1 = new Vector2i(srcPos.x, j);
             Vector2i corner2 = new Vector2i(dstPos.x, j);
             if (gameMap.gemAt(corner1) == null && gameMap.gemAt(corner2) == null) {
