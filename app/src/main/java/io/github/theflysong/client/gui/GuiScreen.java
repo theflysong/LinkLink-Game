@@ -20,6 +20,7 @@ public abstract class GuiScreen implements AutoCloseable {
     private boolean initialized;
     private final List<GuiComponent> components = new ArrayList<>();
     private @Nullable GuiScreenSpace currentScreenSpace;
+    private int maxLayer = -1;
 
     public final void render(GuiRenderer renderer) {
         if (renderer == null) {
@@ -100,13 +101,24 @@ public abstract class GuiScreen implements AutoCloseable {
     }
 
     private void renderComponents(GuiRenderer renderer) {
-        int maxLayer = 1;
-        for (GuiComponent component : components) {
-            maxLayer = Math.max(maxLayer, component.layer());
+        int maxLayer = this.maxLayer;
+        if (maxLayer == -1) {
+            maxLayer = 1;
+            for (GuiComponent component : components) {
+                maxLayer = Math.max(maxLayer, component.layer());
+            }
         }
+
         for (GuiComponent component : components) {
             component.render(renderer, maxLayer);
         }
+    }
+
+    public void setMaxLayer(int maxLayer) {
+        if (maxLayer < 1) {
+            throw new IllegalArgumentException("maxLayer must be at least 1");
+        }
+        this.maxLayer = maxLayer;
     }
 
     @Override
