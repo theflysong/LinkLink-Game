@@ -2,13 +2,10 @@ package io.github.theflysong.level;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.HashSet;
 
 import org.joml.Vector4i;
@@ -29,29 +26,21 @@ import io.github.theflysong.level.TipResult;
  */
 public class GameLevel {
     private final GameMap gameMap;
-    private final Map<String, EnergyBar> energyBars = new HashMap<>();
+    private final EnergyBar energyBar;
     private TipResult lastAllTipResult = TipResult.noTip();
     private Vector4i lastTippedCell = null;
 
     public GameLevel(GameMap gameMap) {
         this.gameMap = Objects.requireNonNull(gameMap, "gameMap must not be null");
-        addEnergyBar("total", Bars.TOTAL.get());
+        this.energyBar = Objects.requireNonNull(Bars.TOTAL.get(), "energyBar must not be null");
     }
 
     public GameMap gameMap() {
         return gameMap;
     }
 
-    public EnergyBar energyBar(String id) {
-        return energyBars.get(id);
-    }
-
-    public void addEnergyBar(String id, @NonNull EnergyBar bar) {
-        energyBars.put(id, bar);
-    }
-
-    public Map<String, EnergyBar> energyBars() {
-        return Collections.unmodifiableMap(energyBars);
+    public @NonNull EnergyBar energyBar() {
+        return energyBar;
     }
 
     public boolean isGameOver() {

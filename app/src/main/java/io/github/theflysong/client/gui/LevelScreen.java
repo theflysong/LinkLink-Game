@@ -1,6 +1,8 @@
 package io.github.theflysong.client.gui;
 
+import org.joml.Matrix4f;
 import org.joml.Vector4f;
+import org.jspecify.annotations.NonNull;
 
 import io.github.theflysong.client.render.LevelRenderer;
 import io.github.theflysong.data.ResourceLocation;
@@ -41,7 +43,8 @@ public final class LevelScreen extends GuiScreen {
     protected void onInit(GuiRenderer renderer) {
         GuiScreenSpace screenSpace = GuiScreenSpace.fromCurrentViewport();
         gameMapComponent = addComponent(
-                new GameMapComponent(gameLevel, levelRenderer, gameMapInputHandler, screenSpace));
+                new GameMapComponent(gameLevel, levelRenderer, gameMapInputHandler, screenSpace, 0, 0, 500, 500)
+            );
         energyBarComponent = addComponent(new EnergyBarComponent(gameLevel, levelRenderer));
 
         refreshButton = addComponent(new GuiButtonComponent(
@@ -76,7 +79,12 @@ public final class LevelScreen extends GuiScreen {
 
         addComponent(new GuiComponent(GuiAnchor.CENTER, 0.0f, 0.0f, 0.0f, 0.0f) {
             @Override
-            protected void renderComponent(GuiRenderer renderer) {
+            public void refreshLayout(@NonNull GuiScreenSpace screenSpace) {
+                setSize(screenSpace.width(), screenSpace.height());
+            }
+
+            @Override
+            protected void renderComponent(GuiRenderer renderer, Matrix4f modelMatrix) {
                 if (!gameLevel.isGameOver()) {
                     passOverlayStartNanos = -1L;
                     return;
@@ -85,16 +93,8 @@ public final class LevelScreen extends GuiScreen {
                 GuiScreenSpace screenSpace = renderer.currentScreenSpace();
 
                 renderer.drawRectangle(
-                    GuiAnchor.CENTER,
-                    0.0f,
-                    0.0f,
-                    screenSpace.width(),
-                    screenSpace.height(),
-                    ENDGAME_OVERLAY_Z,
-                    0.0f,
-                    0.0f,
-                    0.0f,
-                    0.35f);
+                        renderer.withLocalZ(modelMatrix, ENDGAME_OVERLAY_Z),
+                        new Vector4f(0.0f, 0.0f, 0.0f, 0.35f));
                 renderer.renderer().flush();
 
                 if (passOverlayStartNanos < 0L) {
@@ -108,14 +108,16 @@ public final class LevelScreen extends GuiScreen {
                 float passHeight = maxHeight * progress;
                 float passWidth = passHeight * PASS_TEXTURE_ASPECT;
 
-                renderer.drawTexture(
-                        PASS_TEXTURE,
-                        GuiAnchor.CENTER,
+                Matrix4f passModel = renderer.componentChildMatrix(
+                        modelMatrix,
+                        width(),
+                        height(),
                         0.0f,
                         -100.0f,
                         passWidth,
                         passHeight,
                         ENDGAME_MARK_Z);
+                renderer.drawTexture(PASS_TEXTURE, passModel);
             }
         });
     }

@@ -85,6 +85,12 @@ public abstract class GuiScreen implements AutoCloseable {
         return component;
     }
 
+    protected final <T extends GuiComponent> T addComponent(@NonNull T component, int layer) {
+        component.setLayer(layer);
+        components.add(component);
+        return component;
+    }
+
     protected final void clearComponents() {
         components.clear();
     }
@@ -94,8 +100,12 @@ public abstract class GuiScreen implements AutoCloseable {
     }
 
     private void renderComponents(GuiRenderer renderer) {
+        int maxLayer = 1;
         for (GuiComponent component : components) {
-            component.render(renderer);
+            maxLayer = Math.max(maxLayer, component.layer());
+        }
+        for (GuiComponent component : components) {
+            component.render(renderer, maxLayer);
         }
     }
 

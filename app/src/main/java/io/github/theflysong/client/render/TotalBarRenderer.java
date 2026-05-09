@@ -53,26 +53,22 @@ public class TotalBarRenderer implements IBarRenderer {
         }
 
         // 绘制空背景（total_bar_empty）
-        levelRenderer.drawTexture(TOTAL_BAR_EMPTY,
-            modelMatrix,
-            LevelRenderer.DEFAULT_GUI_Z);
+        levelRenderer.drawTexture(TOTAL_BAR_EMPTY, modelMatrix);
 
         if (percent <= 0.0f) {
             return;
         }
 
         // 现在绘制 total_bar_full.
-        // 我们现在绘制的区域是[0, 1]x[0, 1]
-        // 要变换到 [0, 1]x[1 - percent, 1]
-        // 我们首先将其y轴缩放 percent, 得到
-        // [0, 1]x[0, percent]
-        // 然后让 0 => 1 - percent, percent => 1, 也就是在y轴上平移 1 - percent 个单位
-        // 此时的 UV 也应当为
-        // [0, 1]x[1 - percent, 1]
+        // 我们现在绘制的区域是[-1, 1]x[-1, 1]
+        // 要变换到 [-1, 1]x[1 - 2 * percent, 1]
+        // 先将其y轴缩放 percent, 得到高度为 2 * percent 的区域
+        // 再将中心上移到 1 - percent, 使其上沿对齐到 1
+        // 对应的 UV 仍然是 [0, 1]x[1 - percent, 1]
         Matrix4f fullBarMatrix = new Matrix4f(modelMatrix)
                 .translate(0.0f, 1.0f - percent, 0.0f)
                 .scale(1.0f, percent, 1.0f);
-        levelRenderer.drawTextureRegion(TOTAL_BAR_FULL, fullBarMatrix, LevelRenderer.DEFAULT_GUI_Z,
+        levelRenderer.drawTextureRegion(TOTAL_BAR_FULL, fullBarMatrix,
             0.0f, 1.0f - percent, 1.0f, 1.0f);
     }
 

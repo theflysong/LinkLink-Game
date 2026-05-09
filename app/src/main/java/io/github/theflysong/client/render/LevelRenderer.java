@@ -19,9 +19,10 @@ import io.github.theflysong.util.SideOnly;
  */
 @SideOnly(Side.CLIENT)
 public class LevelRenderer extends GuiRenderer {
-    private static final String TOTAL_BAR_ID = "total";
     private static final float TOTAL_BAR_ASPECT_WIDTH_OVER_HEIGHT = 0.25f;
     private static final float TOTAL_BAR_MIN_MARGIN = 16.0f;
+
+    private static final float Z_BAR     = 0.0010f;
 
     private final MapRenderer mapRenderer = new MapRenderer();
 
@@ -75,31 +76,19 @@ public class LevelRenderer extends GuiRenderer {
         GuiScreenSpace screenSpace = GuiScreenSpace.fromCurrentViewport();
         renderer().updateProjection(screenSpace.projectionMatrix());
 
-        for (var entry : level.energyBars().entrySet()) {
-            String barId = entry.getKey();
-            EnergyBar bar = entry.getValue();
-            if (bar == null) {
-                continue;
-            }
+        EnergyBar bar = level.energyBar();
+        if (bar != null) {
             IBarRenderer barRenderer = bar.renderer();
-            if (barRenderer == null) {
-                continue;
+            if (barRenderer != null) {
+                Matrix4f barMatrix = computeBarModelMatrix(new Matrix4f(modelMatrix), level);
+                barRenderer.render(bar, level, this, renderer(), barMatrix);
             }
-            Matrix4f barMatrix = computeBarModelMatrix(barId, level, new Matrix4f(modelMatrix));
-            barRenderer.render(bar, level, this, renderer(), barMatrix);
         }
 
         renderer().flush();
     }
 
-    private Matrix4f computeBarModelMatrix(String barId, GameLevel level, Matrix4f baseMatrix) {
-        if (TOTAL_BAR_ID.equals(barId)) {
-            return computeTotalBarMatrix(baseMatrix, level);
-        }
-        return baseMatrix;
-    }
-
-    private Matrix4f computeTotalBarMatrix(Matrix4f baseMatrix, GameLevel level) {
+    private Matrix4f computeBarModelMatrix(Matrix4f baseMatrix, GameLevel level) {
         GameMap map = level.gameMap();
         MapRenderer.MapBounds bounds = mapRenderer.mapBounds(map);
         if (bounds.width() <= 0.0f || bounds.height() <= 0.0f) {
@@ -119,12 +108,20 @@ public class LevelRenderer extends GuiRenderer {
 
         float centerY = (topPx + bottomPx) * 0.5f;
         float margin = Math.max(TOTAL_BAR_MIN_MARGIN, barWidth * 0.3f);
-        float leftX = leftPx - margin - barWidth;
-        float topY = centerY - barHeight * 0.5f;
+        float centerX = leftPx - margin - barWidth * 0.5f;
+
+        float safeWidth = Math.max(1.0f, screenSpace.width());
+        float safeHeight = Math.max(1.0f, screenSpace.height());
+        float centerOffsetX = centerX - safeWidth * 0.5f;
+        float centerOffsetY = centerY - safeHeight * 0.5f;
+        float localCenterX = (centerOffsetX * 2.0f) / safeWidth;
+        float localCenterY = (centerOffsetY * 2.0f) / safeHeight;
+        float localScaleX = barWidth / safeWidth;
+        float localScaleY = barHeight / safeHeight;
 
         return new Matrix4f(baseMatrix)
-                .translate(leftX, topY, 0.0f)
-                .scale(barWidth, barHeight, 1.0f);
+            .translate(localCenterX, localCenterY, Z_BAR)
+            .scale(localScaleX, localScaleY, 1.0f);
     }
 
     private static float mapSpaceXToGui(float mapSpaceX, float screenWidth, float aspect) {

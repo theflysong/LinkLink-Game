@@ -2,6 +2,7 @@ package io.github.theflysong.client.gui;
 
 import io.github.theflysong.client.render.preprocessor.IPreprocessor;
 import io.github.theflysong.client.sprite.Sprite;
+import org.joml.Matrix4f;
 import org.jspecify.annotations.NonNull;
 
 /**
@@ -24,8 +25,8 @@ public final class GuiSpriteComponent extends GuiComponent {
     }
 
     @Override
-    protected void renderComponent(@NonNull GuiRenderer renderer) {
-        renderer.drawSprite(sprite, anchor(), preprocessor, offsetX(), offsetY(), width(), height(), GuiRenderer.DEFAULT_GUI_Z);
+    protected void renderComponent(@NonNull GuiRenderer renderer, @NonNull Matrix4f modelMatrix) {
+        renderer.drawSprite(sprite, preprocessor, modelMatrix, GuiRenderer.DEFAULT_GUI_Z);
     }
 
     public @NonNull Sprite sprite() {

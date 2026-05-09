@@ -1,5 +1,6 @@
 package io.github.theflysong.client.gui;
 
+import org.joml.Matrix4f;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
@@ -24,16 +25,19 @@ public final class GuiTextComponent extends GuiComponent {
     }
 
     @Override
-    protected void renderComponent(@NonNull GuiRenderer renderer) {
+    protected void beforeRender(@NonNull GuiRenderer renderer) {
         GuiFont resolvedFont = renderer.fonts().resolve(font);
         GuiFont.TextBounds bounds = resolvedFont.measureText(text);
         setSize(bounds.width(), bounds.height());
+    }
 
+    @Override
+    protected void renderComponent(@NonNull GuiRenderer renderer, @NonNull Matrix4f modelMatrix) {
         if (text.isEmpty()) {
             return;
         }
 
-        renderer.drawText(text, font, anchor(), offsetX(), offsetY(), GuiRenderer.DEFAULT_GUI_Z, style);
+        renderer.drawText(text, font, modelMatrix, width(), height(), GuiRenderer.DEFAULT_GUI_Z, style);
     }
 
     public @NonNull String text() {

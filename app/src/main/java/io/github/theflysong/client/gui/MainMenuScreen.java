@@ -88,9 +88,9 @@ public final class MainMenuScreen extends GuiScreen {
             onClick.run();
             return true;
         });
-        button.setOverlayRenderer((renderer, component, z) ->
-                renderer.drawText(label, null, component.anchor(), component.offsetX(), component.offsetY(), z + 0.001f,
-                        TextStyle.normal().withBold(true).withColor(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f))));
+        button.setOverlayRenderer((renderer, component, modelMatrix, localZ) ->
+            renderer.drawText(label, null, modelMatrix, component.width(), component.height(), localZ + 0.001f,
+                TextStyle.normal().withBold(true).withColor(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f))));
         return button;
     }
 

@@ -1,6 +1,7 @@
 package io.github.theflysong.client.gui;
 
 import io.github.theflysong.data.ResourceLocation;
+import org.joml.Matrix4f;
 import org.joml.Vector4f;
 import org.jspecify.annotations.NonNull;
 
@@ -24,8 +25,8 @@ public final class GuiTextureComponent extends GuiComponent {
     }
 
     @Override
-    protected void renderComponent(@NonNull GuiRenderer renderer) {
-        renderer.drawTexture(texture, anchor(), offsetX(), offsetY(), width(), height(), GuiRenderer.DEFAULT_GUI_Z, tintColor);
+    protected void renderComponent(@NonNull GuiRenderer renderer, @NonNull Matrix4f modelMatrix) {
+        renderer.drawTexture(texture, modelMatrix, tintColor);
     }
 
     public @NonNull ResourceLocation texture() {

@@ -1,5 +1,6 @@
 package io.github.theflysong.client.gui;
 
+import org.joml.Matrix4f;
 import org.jspecify.annotations.NonNull;
 
 import io.github.theflysong.client.render.LevelRenderer;
@@ -21,10 +22,14 @@ public final class EnergyBarComponent extends GuiComponent {
 
     @Override
     public void refreshLayout(@NonNull GuiScreenSpace screenSpace) {
+        setAnchor(GuiAnchor.CENTER);
+        setOffsetX(0.0f);
+        setOffsetY(0.0f);
+        setSize(screenSpace.width(), screenSpace.height());
     }
 
     @Override
-    protected void renderComponent(@NonNull GuiRenderer renderer) {
-        levelRenderer.renderBars(gameLevel);
+    protected void renderComponent(@NonNull GuiRenderer renderer, @NonNull Matrix4f modelMatrix) {
+        levelRenderer.renderBars(gameLevel, modelMatrix);
     }
 }
