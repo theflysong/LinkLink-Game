@@ -53,7 +53,7 @@ public class TotalBarRenderer implements IBarRenderer {
         }
 
         // 绘制空背景（total_bar_empty）
-        levelRenderer.drawTexture(TOTAL_BAR_EMPTY, modelMatrix);
+        levelRenderer.drawTexture(TOTAL_BAR_EMPTY, new Matrix4f(modelMatrix).translate(0.0f, 0.0f, 0.0f));
 
         if (percent <= 0.0f) {
             return;
@@ -66,7 +66,7 @@ public class TotalBarRenderer implements IBarRenderer {
         // 再将中心上移到 1 - percent, 使其上沿对齐到 1
         // 对应的 UV 仍然是 [0, 1]x[1 - percent, 1]
         Matrix4f fullBarMatrix = new Matrix4f(modelMatrix)
-                .translate(0.0f, 1.0f - percent, 0.0f)
+                .translate(0.0f, 1.0f - percent, 0.1f)
                 .scale(1.0f, percent, 1.0f);
         levelRenderer.drawTextureRegion(TOTAL_BAR_FULL, fullBarMatrix,
             0.0f, 1.0f - percent, 1.0f, 1.0f);
