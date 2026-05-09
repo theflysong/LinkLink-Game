@@ -34,11 +34,13 @@ public final class PauseMenuScreen extends GuiScreen {
                 GuiAnchor.CENTER,
                 0.0f,
                 -180.0f,
-                TextStyle.normal().withBold(true).withColor(new Vector4f(0.95f, 0.95f, 0.95f, 1.0f))));
+                TextStyle.normal().withBold(true).withColor(new Vector4f(0.95f, 0.95f, 1.0f, 1.0f))), 1);
 
-        addComponent(createMenuButton("存档", -70.0f, () -> onSave.run()));
-        addComponent(createMenuButton("继续游戏", 10.0f, () -> onContinue.run()));
-        addComponent(createMenuButton("返回主菜单", 90.0f, () -> onReturnToMainMenu.run()));
+        addComponent(createMenuButton("存档", -70.0f, () -> onSave.run()), 1);
+        addComponent(createMenuButton("继续游戏", 10.0f, () -> onContinue.run()), 1);
+        addComponent(createMenuButton("返回主菜单", 90.0f, () -> onReturnToMainMenu.run()), 1);
+
+        setMaxLayer(2);
     }
 
     @Override
@@ -74,7 +76,7 @@ public final class PauseMenuScreen extends GuiScreen {
             return true;
         });
         button.setOverlayRenderer((renderer, component, modelMatrix, localZ) ->
-                renderer.drawText(label, null, modelMatrix, component.width(), component.height(), localZ + 0.001f,
+                renderer.drawText(label, null, modelMatrix, component.width(), component.height(), localZ + 0.002f,
                         TextStyle.normal().withBold(true).withColor(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f))));
         return button;
     }
