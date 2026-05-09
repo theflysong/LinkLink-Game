@@ -167,7 +167,7 @@ public class Window {
 		}
 
 		glfwSetKeyCallback(handle, (window, key, scancode, action, mods) -> {
-			if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+			if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS && onKey == null) {
 				glfwSetWindowShouldClose(window, true);
 			}
 			if (onKey != null) {

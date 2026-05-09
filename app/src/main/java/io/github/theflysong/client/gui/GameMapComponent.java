@@ -28,8 +28,9 @@ public final class GameMapComponent extends GuiComponent {
     public GameMapComponent(@NonNull GameLevel gameLevel,
             @NonNull LevelRenderer levelRenderer,
             @NonNull GameMapInputHandler gameMapInputHandler,
-            @NonNull GuiScreenSpace screenSpace) {
-        super(GuiAnchor.CENTER, 0.0f, 0.0f, 0.0f, 0.0f);
+            @NonNull GuiScreenSpace screenSpace,
+        float offsetX, float offsetY, float width, float height) {
+        super(GuiAnchor.CENTER, offsetX, offsetY, width, height);
         this.gameLevel = gameLevel;
         this.levelRenderer = levelRenderer;
         this.gameMapInputHandler = gameMapInputHandler;
@@ -38,7 +39,7 @@ public final class GameMapComponent extends GuiComponent {
     }
 
     @Override
-    protected void renderComponent(@NonNull GuiRenderer renderer) {
+    protected void renderComponent(@NonNull GuiRenderer renderer, @NonNull Matrix4f modelMatrix) {
         Vector4i tippedCell = gameLevel.lastTippedCell();
         Vector2i selectedCell = gameMapInputHandler.currentSelection().orElse(null);
         GameMapInputHandler.MatchPathEffect matchPath = gameMapInputHandler.currentMatchPath().orElse(null);

@@ -1,7 +1,8 @@
 package io.github.theflysong.client;
 
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_TAB;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
 import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
 
 import org.joml.Matrix4f;
 import org.jspecify.annotations.NonNull;
@@ -11,9 +12,11 @@ import static io.github.theflysong.App.LOGGER;
 
 import io.github.theflysong.client.gl.mesh.GLGpuMesh;
 import io.github.theflysong.client.gl.shader.GLShaders;
-import io.github.theflysong.client.gui.ExampleScreen;
+import io.github.theflysong.client.gui.GuiScreen;
 import io.github.theflysong.client.gui.GuiScreenSpace;
 import io.github.theflysong.client.gui.LevelScreen;
+import io.github.theflysong.client.gui.MainMenuScreen;
+import io.github.theflysong.client.gui.PauseMenuScreen;
 import io.github.theflysong.client.render.GemRenderer;
 import io.github.theflysong.client.render.LevelRenderer;
 import io.github.theflysong.client.render.MapRenderer;
@@ -41,18 +44,28 @@ public final class ClientApp {
     private static final String WINDOW_TITLE = "linklink - Gem3 Overlay Demo";
     private static final float ATLAS_DEBUG_VIEWPORT_FILL = 0.92f;
 
+    private enum ScreenState {
+        MAIN_MENU,
+        PLAYING,
+        PAUSED
+    }
+
     @NonNull
-    private Renderer renderer = new Renderer();
+    private final Renderer renderer = new Renderer();
     @NonNull
     private final MapRenderer mapRenderer = new MapRenderer();
     private @Nullable LevelRenderer levelRenderer;
+    private @Nullable MainMenuScreen mainMenuScreen;
+    private @Nullable PauseMenuScreen pauseMenuScreen;
     private @Nullable LevelScreen levelScreen;
-    private @Nullable ExampleScreen exampleScreen;
-    private GameLevel gameLevel;
+    private @Nullable GameLevel gameLevel;
+    private @Nullable GameLevel savedGameLevel;
+    private @Nullable GuiScreen activeScreen;
     private @Nullable GLGpuMesh atlasDebugMesh;
     private final InputDispatcher inputDispatcher = new InputDispatcher();
     private final GameMapInputHandler gameMapInputHandler = new GameMapInputHandler(() -> gameLevel, mapRenderer);
-    private boolean showExampleScreen = false;
+    private ScreenState screenState = ScreenState.MAIN_MENU;
+    private String selectedLevelId = "simple";
 
     public void run() {
         LOGGER.info("Creating window: {}x{}, title={}", (int) WINDOW_WIDTH, (int) WINDOW_HEIGHT, WINDOW_TITLE);
@@ -81,22 +94,42 @@ public final class ClientApp {
         Matrix4f projection = new Matrix4f().ortho(-aspect, aspect, -1.0f, 1.0f, -1.0f, 1.0f);
         renderer.updateProjection(projection);
 
-        gameLevel = new GameLevel(MapGenerator.generate("cell"));
         levelRenderer = new LevelRenderer(renderer);
-        levelScreen = new LevelScreen(gameLevel, levelRenderer, gameMapInputHandler);
-        exampleScreen = new ExampleScreen();
-        atlasDebugMesh = Sprites.CHIPPED_GEM.get().model().createGpuMesh();
+        mainMenuScreen = new MainMenuScreen(
+                this::startGame,
+                this::continueGame,
+                this::exitGame,
+                this::PKGame,
+                this::selectLevel,
+                this::selectedLevelLabel);
+        pauseMenuScreen = new PauseMenuScreen(
+                this::saveGame,
+                this::resumeGame,
+                this::quitToMainMenu);
+        activeScreen = mainMenuScreen;
         setupInputDispatcher();
-        GameMap map = gameLevel.gameMap();
-        LOGGER.info("Client initialization completed: map={}x{}", map.width(), map.height());
+        LOGGER.info("Client initialization completed: menu ready");
     }
 
     private void render() {
-        if (levelRenderer != null) {
-            if (showExampleScreen && exampleScreen != null) {
-                levelRenderer.renderScreen(exampleScreen);
-            } else if (!showExampleScreen && levelScreen != null) {
+        if (levelRenderer == null) {
+            return;
+        }
+
+        if (screenState == ScreenState.MAIN_MENU) {
+            if (mainMenuScreen != null) {
+                levelRenderer.renderScreen(mainMenuScreen);
+            }
+        } else if (screenState == ScreenState.PLAYING) {
+            if (levelScreen != null) {
                 levelRenderer.renderScreen(levelScreen);
+            }
+        } else if (screenState == ScreenState.PAUSED) {
+            if (levelScreen != null) {
+                levelRenderer.renderScreen(levelScreen);
+            }
+            if (pauseMenuScreen != null) {
+                levelRenderer.renderScreen(pauseMenuScreen);
             }
         }
     }
@@ -131,13 +164,17 @@ public final class ClientApp {
             atlasDebugMesh.close();
             atlasDebugMesh = null;
         }
+        if (mainMenuScreen != null) {
+            mainMenuScreen.close();
+            mainMenuScreen = null;
+        }
+        if (pauseMenuScreen != null) {
+            pauseMenuScreen.close();
+            pauseMenuScreen = null;
+        }
         if (levelScreen != null) {
             levelScreen.close();
             levelScreen = null;
-        }
-        if (exampleScreen != null) {
-            exampleScreen.close();
-            exampleScreen = null;
         }
         if (levelRenderer != null) {
             levelRenderer.close();
@@ -159,17 +196,19 @@ public final class ClientApp {
     }
 
     private boolean handleGuiLeftClick(MouseInputContext context) {
-        if (showExampleScreen) {
-            return exampleScreen != null && exampleScreen.handleMouseClick(context);
-        } else {
-            return levelScreen != null && levelScreen.handleMouseClick(context);
+        if (activeScreen != null) {
+            return activeScreen.handleMouseClick(context);
         }
+        return false;
     }
 
     private void onWindowSize(long windowHandle, int windowWidth, int windowHeight) {
         GuiScreenSpace screenSpace = GuiScreenSpace.fromViewportSize(windowWidth, windowHeight);
-        if (exampleScreen != null) {
-            exampleScreen.refreshLayout(screenSpace);
+        if (mainMenuScreen != null) {
+            mainMenuScreen.refreshLayout(screenSpace);
+        }
+        if (pauseMenuScreen != null) {
+            pauseMenuScreen.refreshLayout(screenSpace);
         }
         if (levelScreen != null) {
             levelScreen.refreshLayout(screenSpace);
@@ -206,10 +245,115 @@ public final class ClientApp {
     }
 
     private void onKey(long window, int key, int scancode, int action, int mods) {
-        if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
-            showExampleScreen = !showExampleScreen;
-            LOGGER.info("Switched to {}", showExampleScreen ? "ExampleScreen" : "LevelScreen");
+        if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+            if (screenState == ScreenState.PLAYING) {
+                pauseGame();
+            } else if (screenState == ScreenState.PAUSED) {
+                resumeGame();
+            }
         }
+    }
+
+    private void startGame() {
+        createGameLevel(selectedLevelId);
+        resumeGame();
+    }
+
+    private void PKGame() {
+        //TODO Auto-generated method stub
+        }
+
+    private void continueGame() {
+        if (screenState == ScreenState.PAUSED) {
+            resumeGame();
+            return;
+        }
+        if (gameLevel != null) {
+            screenState = ScreenState.PLAYING;
+            activeScreen = levelScreen;
+            return;
+        }
+        if (savedGameLevel != null) {
+            gameLevel = cloneGameLevel(savedGameLevel);
+            levelScreen = new LevelScreen(gameLevel, levelRenderer, gameMapInputHandler);
+            screenState = ScreenState.PLAYING;
+            activeScreen = levelScreen;
+        }
+    }
+
+    private void pauseGame() {
+        if (screenState != ScreenState.PLAYING) {
+            return;
+        }
+        screenState = ScreenState.PAUSED;
+        activeScreen = pauseMenuScreen;
+    }
+
+    private void resumeGame() {
+        if (gameLevel == null || levelScreen == null) {
+            return;
+        }
+        screenState = ScreenState.PLAYING;
+        activeScreen = levelScreen;
+    }
+
+    private void exitGame() {
+        long handle = Window.currentHandle();
+        if (handle != 0L) {
+            glfwSetWindowShouldClose(handle, true);
+        }
+    }
+
+    private void quitToMainMenu() {
+        screenState = ScreenState.MAIN_MENU;
+        activeScreen = mainMenuScreen;
+        updateMenuState();
+    }
+
+    private void createGameLevel(String levelId) {
+        if (levelRenderer == null) {
+            return;
+        }
+        gameLevel = new GameLevel(MapGenerator.generate(levelId));
+        levelScreen = new LevelScreen(gameLevel, levelRenderer, gameMapInputHandler);
+        selectedLevelId = levelId;
+        updateMenuState();
+    }
+
+    private void saveGame() {
+        if (gameLevel == null) {
+            return;
+        }
+        savedGameLevel = cloneGameLevel(gameLevel);
+        LOGGER.info("Game saved for level {}", selectedLevelId);
+    }
+
+    private void selectLevel(String levelId) {
+        selectedLevelId = levelId;
+        if (mainMenuScreen != null) {
+            // mainMenuScreen.setSelectedLevelId(levelId);
+            mainMenuScreen.setContinueEnabled(gameLevel != null || savedGameLevel != null);
+        }
+    }
+
+    private String selectedLevelLabel() {
+        return switch (selectedLevelId) {
+            case "hard" -> "困难";
+            case "preset" -> "预设";
+            default -> "简单";
+        };
+    }
+
+    private void updateMenuState() {
+        if (mainMenuScreen == null) {
+            return;
+        }
+        mainMenuScreen.setContinueEnabled(gameLevel != null || savedGameLevel != null);
+        // mainMenuScreen.setSelectedLevelId(selectedLevelId);
+    }
+
+    private @Nullable GameLevel cloneGameLevel(@NonNull GameLevel source) {
+        return new GameLevel(source.gameMap().copy());
     }
 
 }

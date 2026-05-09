@@ -30,7 +30,7 @@ public class Gem {
     public void onSpawn(/* Game game, */ GameLevel level, GemInstance instance) {}
     public void onDestroy(/* Game game, */ GameLevel level, GemInstance instance) {
         // 默认销毁效果：为总能量条充能
-        level.energyBar("total").chargeEnergy(energyValue);
+        level.energyBar().chargeEnergy(energyValue);
     }
 
     /**

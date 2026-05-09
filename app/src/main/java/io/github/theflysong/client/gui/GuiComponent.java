@@ -1,6 +1,7 @@
 package io.github.theflysong.client.gui;
 
 import io.github.theflysong.input.MouseInputContext;
+import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -14,6 +15,7 @@ public abstract class GuiComponent {
     private float offsetY;
     private float width;
     private float height;
+    private int layer = 1;
     private boolean visible = true;
     private boolean enabled = true;
     private @Nullable GuiClickCallback onClick;
@@ -30,11 +32,13 @@ public abstract class GuiComponent {
         this.height = Math.max(0.0f, height);
     }
 
-    public final void render(@NonNull GuiRenderer renderer) {
+    public final void render(@NonNull GuiRenderer renderer, int maxLayer) {
         if (!visible) {
             return;
         }
-        renderComponent(renderer);
+        beforeRender(renderer);
+        Matrix4f modelMatrix = renderer.componentModelMatrix(this, maxLayer);
+        renderComponent(renderer, modelMatrix);
     }
 
     public final boolean hitTest(@NonNull GuiScreenSpace screenSpace, float guiX, float guiY) {
@@ -58,7 +62,10 @@ public abstract class GuiComponent {
     public void refreshLayout(@NonNull GuiScreenSpace screenSpace) {
     }
 
-    protected abstract void renderComponent(@NonNull GuiRenderer renderer);
+    protected void beforeRender(@NonNull GuiRenderer renderer) {
+    }
+
+    protected abstract void renderComponent(@NonNull GuiRenderer renderer, @NonNull Matrix4f modelMatrix);
 
     public @NonNull GuiAnchor anchor() {
         return anchor;
@@ -95,6 +102,14 @@ public abstract class GuiComponent {
     public void setSize(float width, float height) {
         this.width = Math.max(0.0f, width);
         this.height = Math.max(0.0f, height);
+    }
+
+    public int layer() {
+        return layer;
+    }
+
+    public void setLayer(int layer) {
+        this.layer = Math.max(1, layer);
     }
 
     public boolean visible() {

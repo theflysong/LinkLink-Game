@@ -5,6 +5,7 @@ import io.github.theflysong.client.window.Window;
 import io.github.theflysong.client.window.WindowSize;
 import io.github.theflysong.data.ResourceLocation;
 import io.github.theflysong.input.MouseInputContext;
+import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -56,17 +57,17 @@ public final class GuiButtonComponent extends GuiComponent {
     }
 
     @Override
-    protected void renderComponent(@NonNull GuiRenderer renderer) {
+    protected void renderComponent(@NonNull GuiRenderer renderer, @NonNull Matrix4f modelMatrix) {
         VisualState state = resolveVisualState(renderer);
         ResourceLocation texture = resolveTexture(state);
-        renderer.drawTexture(texture, anchor(), offsetX(), offsetY(), width(), height(), baseZ);
+        renderer.drawTexture(texture, renderer.withLocalZ(modelMatrix, baseZ));
 
         ResourceLocation overlayTexture = overlayTextureSupplier.get();
         if (overlayTexture != null) {
-            renderer.drawTexture(overlayTexture, anchor(), offsetX(), offsetY(), width(), height(), overlayTextureZ());
+            renderer.drawTexture(overlayTexture, renderer.withLocalZ(modelMatrix, overlayTextureZ()));
         }
         if (overlayRenderer != null) {
-            overlayRenderer.render(renderer, this, overlayRendererZ());
+            overlayRenderer.render(renderer, this, modelMatrix, overlayRendererZ());
         }
     }
 
@@ -201,6 +202,9 @@ public final class GuiButtonComponent extends GuiComponent {
 
     @FunctionalInterface
     public interface OverlayRenderer {
-        void render(@NonNull GuiRenderer renderer, @NonNull GuiButtonComponent button, float z);
+        void render(@NonNull GuiRenderer renderer,
+                @NonNull GuiButtonComponent button,
+                @NonNull Matrix4f modelMatrix,
+                float localZ);
     }
 }
