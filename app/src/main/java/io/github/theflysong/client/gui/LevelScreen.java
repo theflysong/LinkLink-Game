@@ -93,7 +93,12 @@ public final class LevelScreen extends GuiScreen {
                 GuiScreenSpace screenSpace = renderer.currentScreenSpace();
 
                 renderer.drawRectangle(
-                        renderer.withLocalZ(modelMatrix, ENDGAME_OVERLAY_Z),
+                        GuiAnchor.CENTER,
+                        0.0f,
+                        0.0f,
+                        screenSpace.width(),
+                        screenSpace.height(),
+                        ENDGAME_OVERLAY_Z,
                         new Vector4f(0.0f, 0.0f, 0.0f, 0.35f));
                 renderer.renderer().flush();
 
