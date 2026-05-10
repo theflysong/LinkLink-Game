@@ -44,6 +44,7 @@ public class MapRenderer {
 	private static final float Z_GEM         = 0.0003f;
 	private static final float Z_MATCH_PATH  = 0.0005f;
 	private static final float Z_OVERLAY     = 0.0007f;
+	private static final float Z_TIPS_OVERLAY = 0.0008f;
 
 	public static float applyHighlight(float colorComponent) {
 		return 1 - (1 - colorComponent) * HIGHLIGHT_MASK;
@@ -223,8 +224,11 @@ public class MapRenderer {
 				if (selected) {
 					renderSelectionOverlay(renderer, overlayMatrix);
 				}
-				if (!selected && tipped) {
-					renderTipsOverlay(renderer, overlayMatrix);
+				if (tipped) {
+					Matrix4f tipsOverlayMatrix = new Matrix4f(modelMatrix)
+							.translate(center.x, center.y, Z_TIPS_OVERLAY)
+							.scale(layout.gemSize, layout.gemSize, 1.0f);
+					renderTipsOverlay(renderer, tipsOverlayMatrix);
 				}
 			}
 		}
