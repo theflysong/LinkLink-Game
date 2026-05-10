@@ -237,5 +237,7 @@ public class GameLevel {
 
     public void refreshMap() {
         gameMap.refreshMap();
+        setLastTipResult(TipResult.noTip());
+        setLastTippedCell(null);
     }
 }
