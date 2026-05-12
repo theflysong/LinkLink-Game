@@ -31,8 +31,8 @@ public final class LevelScreen extends GuiScreen {
     private GuiButtonComponent tipsButton;
     private long passOverlayStartNanos = -1L;
 
-    private static final float ENDGAME_OVERLAY_Z = 0.0020f;
-    private static final float ENDGAME_MARK_Z = 0.0030f;
+    private static final float ENDGAME_OVERLAY_Z = 0.990f;
+    private static final float ENDGAME_MARK_Z = 0.995f;
 
     public LevelScreen(GameLevel gameLevel,
             LevelRenderer levelRenderer,
@@ -46,9 +46,9 @@ public final class LevelScreen extends GuiScreen {
     protected void onInit(GuiRenderer renderer) {
         GuiScreenSpace screenSpace = GuiScreenSpace.fromCurrentViewport();
         gameMapComponent = addComponent(
-                new GameMapComponent(gameLevel, levelRenderer, gameMapInputHandler, screenSpace, 0, 0, 500, 500)
+                new GameMapComponent(gameLevel, levelRenderer, gameMapInputHandler, screenSpace, 0, 0, 500, 500), 100
             );
-        energyBarComponent = addComponent(new EnergyBarComponent(gameLevel, levelRenderer));
+        energyBarComponent = addComponent(new EnergyBarComponent(gameLevel, levelRenderer), 90);
 
         refreshButton = addComponent(new GuiButtonComponent(
                 new ResourceLocation("linklink", ResourceType.TEXTURE, "gui/button_disabled.png"),
@@ -58,7 +58,7 @@ public final class LevelScreen extends GuiScreen {
                 -100.0f,
                 400.0f,
                 50.0f,
-                50.0f));
+                50.0f), 100);
         refreshButton.setOverlayTexture(new ResourceLocation(ResourceType.TEXTURE, "gui/overlay/shuffle.png"));
         refreshButton.setOnClick((component, context) -> {
             gameLevel.refreshMap(ENERGY_COST_REFRESH);
@@ -73,7 +73,7 @@ public final class LevelScreen extends GuiScreen {
                 -100.0f,
                 320.0f,
                 50.0f,
-                50.0f));
+                50.0f), 100);
         tipsButton.setOverlayTexture(new ResourceLocation(ResourceType.TEXTURE, "gui/overlay/tips.png"));
         tipsButton.setOnClick((component, context) -> {
             gameLevel.updateTips(ENERGY_COST_TIPS);
@@ -127,7 +127,7 @@ public final class LevelScreen extends GuiScreen {
                         ENDGAME_MARK_Z);
                 renderer.drawTexture(PASS_TEXTURE, passModel);
             }
-        });
+        }, 1);
     }
 
     @Override
