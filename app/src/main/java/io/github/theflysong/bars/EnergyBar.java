@@ -36,10 +36,6 @@ public abstract class EnergyBar {
         return false;
     }
 
-    public void setEnergy(int amount) {
-        this.effectCount = Math.min(amount, maxEffectCount);
-    }
-
     public int currentEnergy() {
         return effectCount;
     }
