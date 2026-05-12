@@ -19,6 +19,14 @@ public record Identifier(String namespace, String path) {
         this(App.APPID, path);
     }
 
+    public static Identifier parse(String id) {
+        int colonIndex = id.indexOf(':');
+        if (colonIndex == -1) {
+            return new Identifier(id);
+        }
+        return new Identifier(id.substring(0, colonIndex), id.substring(colonIndex + 1));
+    }
+
     @Override
     public String toString() {
         return namespace + ":" + path;

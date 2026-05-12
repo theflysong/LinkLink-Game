@@ -2,6 +2,10 @@ package io.github.theflysong.gem;
 
 import org.jspecify.annotations.NonNull;
 
+import com.google.gson.JsonObject;
+
+import io.github.theflysong.data.Identifier;
+
 /**
  * 宝石实例
  *
@@ -27,6 +31,21 @@ public class GemInstance {
     @NonNull
     public GemColor color() {
         return color;
+    }
+
+    public JsonObject toJson() {
+        JsonObject obj = new JsonObject();
+        Identifier id = Gems.GEMS.getKey(gem);
+        obj.addProperty("gem", id.toString());
+        obj.addProperty("color", color.name());
+        return obj;
+    }
+
+    public static GemInstance fromJson(JsonObject obj) {
+        Identifier identifier = Identifier.parse(obj.get("gem").getAsString());
+        Gem gem = Gems.GEMS.getOrThrow(identifier);
+        GemColor color = GemColor.valueOf(obj.get("color").getAsString());
+        return new GemInstance(gem, color);
     }
 
     public boolean equals(GemInstance other) {
