@@ -14,6 +14,9 @@ import io.github.theflysong.client.gl.mesh.GLGpuMesh;
 import io.github.theflysong.client.gl.shader.GLShaders;
 import io.github.theflysong.client.gui.GuiScreen;
 import io.github.theflysong.client.gui.GuiScreenSpace;
+import io.github.theflysong.client.gui.AuthMenuScreen;
+import io.github.theflysong.client.gui.LoginScreen;
+import io.github.theflysong.client.gui.RegisterScreen;
 import io.github.theflysong.client.gui.LevelScreen;
 import io.github.theflysong.client.gui.MainMenuScreen;
 import io.github.theflysong.client.gui.PauseMenuScreen;
@@ -32,6 +35,7 @@ import io.github.theflysong.init.InitializationPipeline;
 import io.github.theflysong.level.GameMap;
 import io.github.theflysong.level.GameLevel;
 import io.github.theflysong.level.MapGenerator;
+import io.github.theflysong.user.UserSystem;
 
 import static org.lwjgl.opengl.GL11C.*;
 
@@ -47,7 +51,8 @@ public final class ClientApp {
     private enum ScreenState {
         MAIN_MENU,
         PLAYING,
-        PAUSED
+        PAUSED,
+        AUTH
     }
 
     @NonNull
@@ -61,11 +66,15 @@ public final class ClientApp {
     private @Nullable GameLevel gameLevel;
     private @Nullable GameLevel savedGameLevel;
     private @Nullable GuiScreen activeScreen;
+    private @Nullable AuthMenuScreen authMenuScreen;
+    private @Nullable LoginScreen loginScreen;
+    private @Nullable RegisterScreen registerScreen;
     private @Nullable GLGpuMesh atlasDebugMesh;
     private final InputDispatcher inputDispatcher = new InputDispatcher();
     private final GameMapInputHandler gameMapInputHandler = new GameMapInputHandler(() -> gameLevel, mapRenderer);
+    private UserSystem userSystem;
     private ScreenState screenState = ScreenState.MAIN_MENU;
-    private String selectedLevelId = "simple";
+    private String selectedLevelId = "hard";
 
     public void run() {
         LOGGER.info("Creating window: {}x{}, title={}", (int) WINDOW_WIDTH, (int) WINDOW_HEIGHT, WINDOW_TITLE);
@@ -75,6 +84,7 @@ public final class ClientApp {
                 .onWindowSize(this::onWindowSize)
                 .onMouseButton(this::onMouseButton)
                 .onKey(this::onKey)
+                .onChar(this::onChar)
                 .onCleanup(this::cleanup)
                 .run();
     }
@@ -82,6 +92,7 @@ public final class ClientApp {
     private void init() {
         LOGGER.info("Client initialization started");
         InitializationEvent initEvent = InitializationPipeline.initializeClientRegistries();
+        userSystem = new UserSystem();
         initEvent.initializeNanos().forEach((name, nanos) -> {
             double millis = nanos / 1_000_000.0;
             LOGGER.info("[init] {} initialized in {} ms", name, String.format("%.3f", millis));
@@ -95,20 +106,15 @@ public final class ClientApp {
         renderer.updateProjection(projection);
 
         levelRenderer = new LevelRenderer(renderer);
-        mainMenuScreen = new MainMenuScreen(
-                this::startGame,
-                this::continueGame,
-                this::exitGame,
-                this::PKGame,
-                this::selectLevel,
-                this::selectedLevelLabel);
-        pauseMenuScreen = new PauseMenuScreen(
-                this::saveGame,
-                this::resumeGame,
-                this::quitToMainMenu);
-        activeScreen = mainMenuScreen;
+        authMenuScreen = new AuthMenuScreen(
+                this::openLogin,
+                this::openRegister,
+                this::loginAsGuest,
+                this::exitGame);
+        activeScreen = authMenuScreen;
+        screenState = ScreenState.AUTH;
         setupInputDispatcher();
-        LOGGER.info("Client initialization completed: menu ready");
+        LOGGER.info("Client initialization completed: auth screen ready");
     }
 
     private void render() {
@@ -130,6 +136,10 @@ public final class ClientApp {
             }
             if (pauseMenuScreen != null) {
                 levelRenderer.renderScreen(pauseMenuScreen);
+            }
+        } else if (screenState == ScreenState.AUTH) {
+            if (activeScreen != null) {
+                levelRenderer.renderScreen(activeScreen);
             }
         }
     }
@@ -172,6 +182,18 @@ public final class ClientApp {
             pauseMenuScreen.close();
             pauseMenuScreen = null;
         }
+        if (authMenuScreen != null) {
+            authMenuScreen.close();
+            authMenuScreen = null;
+        }
+        if (loginScreen != null) {
+            loginScreen.close();
+            loginScreen = null;
+        }
+        if (registerScreen != null) {
+            registerScreen.close();
+            registerScreen = null;
+        }
         if (levelScreen != null) {
             levelScreen.close();
             levelScreen = null;
@@ -213,6 +235,15 @@ public final class ClientApp {
         if (levelScreen != null) {
             levelScreen.refreshLayout(screenSpace);
         }
+        if (authMenuScreen != null) {
+            authMenuScreen.refreshLayout(screenSpace);
+        }
+        if (loginScreen != null) {
+            loginScreen.refreshLayout(screenSpace);
+        }
+        if (registerScreen != null) {
+            registerScreen.refreshLayout(screenSpace);
+        }
     }
 
     private void onMouseButton(long windowHandle,
@@ -245,7 +276,27 @@ public final class ClientApp {
     }
 
     private void onKey(long window, int key, int scancode, int action, int mods) {
-        if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        if (action != GLFW_PRESS) {
+            return;
+        }
+        if (screenState == ScreenState.AUTH) {
+            if (key == GLFW_KEY_ESCAPE) {
+                closeAuth();
+                return;
+            }
+            if (key == 259 /* GLFW_KEY_BACKSPACE */) {
+                if (activeScreen instanceof LoginScreen login) {
+                    login.handleBackspace();
+                } else if (activeScreen instanceof RegisterScreen register) {
+                    register.handleBackspace();
+                }
+                return;
+            }
+            if (key == 257 /* GLFW_KEY_ENTER */) {
+                return;
+            }
+        }
+        if (key == GLFW_KEY_ESCAPE) {
             if (screenState == ScreenState.PLAYING) {
                 pauseGame();
             } else if (screenState == ScreenState.PAUSED) {
@@ -254,9 +305,80 @@ public final class ClientApp {
         }
     }
 
+    private void onChar(long window, int codepoint) {
+        if (activeScreen instanceof LoginScreen login) {
+            login.handleChar(codepoint);
+        } else if (activeScreen instanceof RegisterScreen register) {
+            register.handleChar(codepoint);
+        }
+    }
+
     private void startGame() {
         createGameLevel(selectedLevelId);
         resumeGame();
+    }
+
+    private void loginAsGuest() {
+        userSystem.loginAsGuest();
+        gotoMainMenu();
+    }
+
+    private void openLogin() {
+        if (loginScreen == null) {
+            loginScreen = new LoginScreen(userSystem, this::gotoMainMenu, this::backToAuthMenu);
+        }
+        loginScreen.resetInit();
+        screenState = ScreenState.AUTH;
+        activeScreen = loginScreen;
+    }
+
+    private void openRegister() {
+        if (registerScreen == null) {
+            registerScreen = new RegisterScreen(userSystem, this::gotoMainMenu, this::backToAuthMenu);
+        }
+        registerScreen.resetInit();
+        screenState = ScreenState.AUTH;
+        activeScreen = registerScreen;
+    }
+
+    private void backToAuthMenu() {
+        screenState = ScreenState.AUTH;
+        activeScreen = authMenuScreen;
+    }
+
+    private void gotoMainMenu() {
+        if (mainMenuScreen == null) {
+            mainMenuScreen = new MainMenuScreen(
+                    this::startGame,
+                    this::continueGame,
+                    this::exitGame,
+                    this::PKGame,
+                    this::selectLevel,
+                    this::selectedLevelLabel);
+            pauseMenuScreen = new PauseMenuScreen(
+                    this::saveGame,
+                    this::resumeGame,
+                    this::quitToMainMenu);
+        }
+        screenState = ScreenState.MAIN_MENU;
+        activeScreen = mainMenuScreen;
+        updateUserDisplay();
+        updateMenuState();
+    }
+
+    private void closeAuth() {
+        if (activeScreen instanceof LoginScreen || activeScreen instanceof RegisterScreen) {
+            backToAuthMenu();
+            return;
+        }
+        // AuthMenuScreen: ESC exits game
+        exitGame();
+    }
+
+    private void updateUserDisplay() {
+        if (mainMenuScreen != null && userSystem.getCurrentUser() != null) {
+            mainMenuScreen.setCurrentUser(userSystem.getCurrentUser().getUsername());
+        }
     }
 
     private void PKGame() {
@@ -272,6 +394,19 @@ public final class ClientApp {
             screenState = ScreenState.PLAYING;
             activeScreen = levelScreen;
             return;
+        }
+        if (userSystem.hasSave()) {
+            GameMap savedMap = userSystem.getSavedGameMap();
+            if (savedMap != null) {
+                gameLevel = new GameLevel(savedMap);
+                gameLevel.energyBar().setEnergy(userSystem.getSavedEnergy());
+                selectedLevelId = userSystem.getSavedLevelId();
+                levelScreen = new LevelScreen(gameLevel, levelRenderer, gameMapInputHandler);
+                screenState = ScreenState.PLAYING;
+                activeScreen = levelScreen;
+                updateMenuState();
+                return;
+            }
         }
         if (savedGameLevel != null) {
             gameLevel = cloneGameLevel(savedGameLevel);
@@ -325,6 +460,14 @@ public final class ClientApp {
             return;
         }
         savedGameLevel = cloneGameLevel(gameLevel);
+        if (!userSystem.isGuest()) {
+            userSystem.saveGame(
+                gameLevel.gameMap(),
+                selectedLevelId,
+                gameLevel.energyBar().currentEnergy()
+            );
+        }
+        updateMenuState();
         LOGGER.info("Game saved for level {}", selectedLevelId);
     }
 
@@ -332,7 +475,8 @@ public final class ClientApp {
         selectedLevelId = levelId;
         if (mainMenuScreen != null) {
             // mainMenuScreen.setSelectedLevelId(levelId);
-            mainMenuScreen.setContinueEnabled(gameLevel != null || savedGameLevel != null);
+            mainMenuScreen.setContinueEnabled(
+                gameLevel != null || savedGameLevel != null || userSystem.hasSave());
         }
     }
 
@@ -348,8 +492,8 @@ public final class ClientApp {
         if (mainMenuScreen == null) {
             return;
         }
-        mainMenuScreen.setContinueEnabled(gameLevel != null || savedGameLevel != null);
-        // mainMenuScreen.setSelectedLevelId(selectedLevelId);
+        mainMenuScreen.setContinueEnabled(
+            gameLevel != null || savedGameLevel != null || userSystem.hasSave());
     }
 
     private @Nullable GameLevel cloneGameLevel(@NonNull GameLevel source) {

@@ -30,6 +30,7 @@ import static org.lwjgl.glfw.GLFW.glfwGetCursorPos;
 import static org.lwjgl.glfw.GLFW.glfwGetWindowSize;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowSizeCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetFramebufferSizeCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetCharCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetKeyCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetMouseButtonCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetErrorCallback;
@@ -65,6 +66,7 @@ public class Window {
 	private MouseButtonCallback onMouseButton;
 	private WindowSizeCallback onWindowSize;
 	private KeyCallback onKey;
+	private CharCallback onChar;
 
 	public Window(int width, int height, String title) {
 		this.width = width;
@@ -105,6 +107,11 @@ public class Window {
 
 	public Window onKey(KeyCallback onKey) {
 		this.onKey = onKey;
+		return this;
+	}
+
+	public Window onChar(CharCallback onChar) {
+		this.onChar = onChar;
 		return this;
 	}
 
@@ -172,6 +179,12 @@ public class Window {
 			}
 			if (onKey != null) {
 				onKey.onKey(window, key, scancode, action, mods);
+			}
+		});
+
+		glfwSetCharCallback(handle, (window, codepoint) -> {
+			if (onChar != null) {
+				onChar.onChar(window, codepoint);
 			}
 		});
 

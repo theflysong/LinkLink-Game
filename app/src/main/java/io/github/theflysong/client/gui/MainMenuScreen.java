@@ -28,6 +28,7 @@ public final class MainMenuScreen extends GuiScreen {
 
     private GuiButtonComponent continueButton;
     private GuiTextComponent selectedLevelText;
+    private GuiTextComponent userStatusText;
     private String selectedLevelId;
 
     public MainMenuScreen(@NonNull Runnable onStart,
@@ -61,6 +62,14 @@ public final class MainMenuScreen extends GuiScreen {
         addComponent(createMenuButton("关卡选择", 20.0f, () -> selectLevel(selectedLevelId)));
         addComponent(createMenuButton("对战模式", 100.0f, () -> onPK.run()));
         addComponent(createMenuButton("退出游戏", 180.0f, () -> onExitApp.run()));
+
+        userStatusText = addComponent(new GuiTextComponent(
+                "",
+                null,
+                GuiAnchor.CENTER,
+                0.0f,
+                260.0f,
+                TextStyle.normal().withColor(new Vector4f(0.7f, 0.75f, 0.8f, 1.0f))));
     }
 
     @Override
@@ -71,6 +80,12 @@ public final class MainMenuScreen extends GuiScreen {
     public void setContinueEnabled(boolean enabled) {
         if (continueButton != null) {
             continueButton.setDisabled(!enabled);
+        }
+    }
+
+    public void setCurrentUser(String userName) {
+        if (userStatusText != null) {
+            userStatusText.setText("当前用户：" + userName);
         }
     }
 

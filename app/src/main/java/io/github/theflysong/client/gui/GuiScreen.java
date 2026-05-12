@@ -125,4 +125,13 @@ public abstract class GuiScreen implements AutoCloseable {
     public void close() {
         clearComponents();
     }
+
+    /**
+     * 重置初始化状态，使下次渲染时重新调用 onInit。
+     * 用于每次进入界面时清空输入等场景。
+     */
+    public void resetInit() {
+        initialized = false;
+        clearComponents();
+    }
 }

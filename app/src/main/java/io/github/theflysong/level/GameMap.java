@@ -4,8 +4,12 @@ import org.joml.Vector2i;
 
 import io.github.theflysong.gem.GemInstance;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+
 import java.util.Objects;
-import java.util.function.Consumer;
 
 /**
  * 游戏地图
@@ -59,7 +63,7 @@ public class GameMap
     public GemInstance gemAt(int x, int y) {
         if (x < 0 || x >= width || y < 0 || y >= height) {
             if(x == -1 || x == width || y == -1 || y == height) {
-                return null; 
+                return null;
             }
             throw new IndexOutOfBoundsException("Invalid map coordinate: (" + x + ", " + y + ")");
         }
@@ -89,5 +93,43 @@ public class GameMap
 
     public void refreshMap() {
         gems = MapGenerator.refreshMap(gems, width, height);
+    }
+
+    public JsonObject toJson() {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("width", width);
+        obj.addProperty("height", height);
+        JsonArray rows = new JsonArray();
+        for (int y = 0; y < height; y++) {
+            JsonArray row = new JsonArray();
+            for (int x = 0; x < width; x++) {
+                GemInstance gem = gems[x][y];
+                if (gem != null) {
+                    row.add(gem.toJson());
+                } else {
+                    row.add(JsonNull.INSTANCE);
+                }
+            }
+            rows.add(row);
+        }
+        obj.add("gems", rows);
+        return obj;
+    }
+
+    public static GameMap fromJson(JsonObject obj) {
+        int width = obj.get("width").getAsInt();
+        int height = obj.get("height").getAsInt();
+        GemInstance[][] gems = new GemInstance[width][height];
+        JsonArray rows = obj.getAsJsonArray("gems");
+        for (int y = 0; y < height; y++) {
+            JsonArray row = rows.get(y).getAsJsonArray();
+            for (int x = 0; x < width; x++) {
+                JsonElement cell = row.get(x);
+                if (!cell.isJsonNull()) {
+                    gems[x][y] = GemInstance.fromJson(cell.getAsJsonObject());
+                }
+            }
+        }
+        return new GameMap(gems, width, height);
     }
 }
