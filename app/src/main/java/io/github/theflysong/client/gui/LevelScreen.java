@@ -19,6 +19,9 @@ public final class LevelScreen extends GuiScreen {
     private static final float PASS_TEXTURE_ASPECT = 829.0f / 771.0f;
     private static final float PASS_ANIMATION_SECONDS = 1.0f;
 
+    private static final int ENERGY_COST_REFRESH = 10;
+    private static final int ENERGY_COST_TIPS = 5;
+
     private final GameLevel gameLevel;
     private final LevelRenderer levelRenderer;
     private final GameMapInputHandler gameMapInputHandler;
@@ -58,7 +61,7 @@ public final class LevelScreen extends GuiScreen {
                 50.0f), 100);
         refreshButton.setOverlayTexture(new ResourceLocation(ResourceType.TEXTURE, "gui/overlay/shuffle.png"));
         refreshButton.setOnClick((component, context) -> {
-            gameLevel.refreshMap();
+            gameLevel.refreshMap(ENERGY_COST_REFRESH);
             return true;
         });
 
@@ -73,7 +76,7 @@ public final class LevelScreen extends GuiScreen {
                 50.0f), 100);
         tipsButton.setOverlayTexture(new ResourceLocation(ResourceType.TEXTURE, "gui/overlay/tips.png"));
         tipsButton.setOnClick((component, context) -> {
-            gameLevel.updateTips();
+            gameLevel.updateTips(ENERGY_COST_TIPS);
             return true;
         });
 

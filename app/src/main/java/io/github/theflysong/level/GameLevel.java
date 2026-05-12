@@ -220,7 +220,10 @@ public class GameLevel {
         this.lastTippedCell = lastTippedCell;
     }
 
-    public void updateTips() {
+    public void updateTips(int energyCost) {
+        if (!energyBar.useEnergy(energyCost)) {
+            return;
+        }
         setLastTipResult(tip());
         // choose a random tip from the available tips
         if (!lastAllTipResult.tips().isEmpty()) {
@@ -235,7 +238,12 @@ public class GameLevel {
         }
     }
 
-    public void refreshMap() {
+    public void refreshMap(int energyCost) {
+        if(!energyBar.useEnergy(energyCost)) {
+            return;
+        }
         gameMap.refreshMap();
+        setLastTipResult(TipResult.noTip());
+        setLastTippedCell(null);
     }
 }
